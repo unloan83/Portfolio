@@ -1,5 +1,10 @@
 name: Weekly Portfolio Stock Analysis
-
+- name: Send Notification to Telegram
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_CHAT_ID }}
+        token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        message: "Weekly Stock Portfolio Analysis Completed! Check your GitHub Readme for buy/sell actions."
 on:
   schedule:
     # Runs every Saturday at 00:00 UTC (5:30 AM IST)
