@@ -1,0 +1,40 @@
+name: Weekly Portfolio Stock Analysis
+
+on:
+  schedule:
+    # Runs every Saturday at 00:00 UTC (5:30 AM IST)
+    - cron: '0 0 * * 6'
+  workflow_dispatch: # Allows you to manually trigger the run anytime via GitHub UI
+
+jobs:
+  analyze_and_report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Allows the workflow to commit files back to your repo
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-node-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas yfinance lxml tabulate
+
+    - name: Run Analysis Model
+      run: python analysis.py
+
+    - name: Commit and Push Report
+      run: |
+        git config --global user.name "Portfolio Automation Bot"
+        git config --global user.email "bot@github.com"
+        git add reports/*.md README.md
+        # Only commit if there are changes
+        git diff-index --quiet HEAD || git commit -m "Automated Weekly Report Update: $(date +'%Y-%m-%d')"
+        git push
