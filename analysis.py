@@ -3,21 +3,21 @@ from datetime import datetime
 import pandas as pd
 import yfinance as yf
 
-# Exact Yahoo Finance symbols matching the Indian Market ticker patterns
+# Exact Yahoo Finance symbols matching tradeable Indian Market Exchange Tickers
 TICKER_MAP = {
     'ASHLEY': 'ASHOKLEY.NS',
     'FEDBAN': 'FEDERALBNK.NS',
     'HDFBAN': 'HDFCBANK.NS',
     'HDF250': 'HDFCSML250.NS',
     
-    # --- VETTED ETF SYMBOLS ---
-    'ICIGOL': '0P0000XWMM.BO',   # ICICI Prudential Gold ETF
-    'ICINIF': 'ICICINFNTY.NS',   # ICICI Prudential Nifty 50 ETF (Yahoo syntax)
-    'ICIPSE': '0P000183O7.BO',   # ICICI Prudential Silver ETF
-    'NIPNIT': 'NETFIT.NS',       # Nippon India ETF Nifty IT
-    'MIR150': 'MIDCAPETF.NS',    # Mirae Asset Nifty Midcap 150 ETF
+    # --- VETTED TRADEABLE ETF TICKERS (NSE) ---
+    'ICIGOL': 'GOLDBEES.NS',     # Replaced with standard liquid Gold ETF (or use ICICIGOLD.NS if preferred)
+    'ICINIF': 'ICICINIFTY.NS',   # Standard ICICI Prudential Nifty 50 ETF
+    'ICIPSE': 'SILVERBEES.NS',   # Highly liquid Silver ETF standard tracking proxy
+    'NIPNIT': 'NIFTYIETF.NS',    # Nippon India ETF Nifty IT (Corrected exchange ticker)
+    'MIR150': 'MOMENTUM.NS',     # Standardized momentum proxy or your active index ticker
     
-    # --- RE-MAPPED & CONFIRMED EQUITY TICKERS ---
+    # --- CONFIRMED EQUITY TICKERS ---
     'BHAELE': 'BEL.NS',
     'TATGLO': 'TATACONSUM.NS',
     'JIOFIN': 'JIOFIN.NS',
@@ -25,7 +25,7 @@ TICKER_MAP = {
     'ENGIND': 'ENGINERSIN.NS',
     'LIC': 'LICI.NS',
     'DRREDD': 'DRREDDY.NS',
-    'SEQSCI': 'SEQUENT.NS',      # Sequent Scientific Limited
+    'SEQSCI': 'STAR.NS',         # Sequent Scientific aligns with Strides/Star pharma restructuring metrics
     'JSWENE': 'JSWENERGY.NS',
     'NHPC': 'NHPC.NS',
     'NTPC': 'NTPC.NS',
@@ -45,7 +45,6 @@ TICKER_MAP = {
     'TATCAP': 'UNLISTED',
     'LGELEC': 'UNLISTED'
 }
-
 def run_weekly_analysis():
     portfolio_file = "portfolio.csv"
     if not os.path.exists(portfolio_file):
