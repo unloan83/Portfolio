@@ -3,7 +3,7 @@ name: Weekly Portfolio Stock Analysis
 on:
   schedule:
     # Runs every Saturday at 00:00 UTC (5:30 AM IST)
-    - cron: '0 0 * * 6'
+    - cron: '0 0 * * 3,6'
   workflow_dispatch: # Allows manual trigger via GitHub UI
 
 jobs:
@@ -34,7 +34,8 @@ jobs:
       run: |
         git config --global user.name "Portfolio Automation Bot"
         git config --global user.email "bot@github.com"
-        git add reports/*.md README.md || true
+        # UPDATED: Added tracking file target to git tracking engine
+        git add reports/*.md README.md re-engineering.csv || true
         git diff-index --quiet HEAD || git commit -m "Automated Weekly Report Update: $(date +'%Y-%m-%d')"
         git push
 
