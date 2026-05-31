@@ -9,15 +9,11 @@ TICKER_MAP = {
     'FEDBAN': 'FEDERALBNK.NS',
     'HDFBAN': 'HDFCBANK.NS',
     'HDF250': 'HDFCSML250.NS',
-    
-    # --- VETTED TRADEABLE ETF TICKERS (NSE) ---
-    'ICIGOL': 'GOLDBEES.NS',     # Replaced with standard liquid Gold ETF (or use ICICIGOLD.NS if preferred)
-    'ICINIF': 'ICICINFNTY.NS',   # Standard ICICI Prudential Nifty 50 ETF
-    'ICIPSE': 'SILVERBEES.NS',   # Highly liquid Silver ETF standard tracking proxy
-    'NIPNIT': 'NIFTYIETF.NS',    # Nippon India ETF Nifty IT (Corrected exchange ticker)
-    'MIR150': 'MOMENTUM.NS',     # Standardized momentum proxy or your active index ticker
-    
-    # --- CONFIRMED EQUITY TICKERS ---
+    'ICIGOL': 'GOLDBEES.NS',     
+    'ICINIF': 'ICICINIFTY.NS',   
+    'ICIPSE': 'SILVERBEES.NS',   
+    'NIPNIT': 'NIFTYIETF.NS',    
+    'MIR150': 'MOMENTUM.NS',     
     'BHAELE': 'BEL.NS',
     'TATGLO': 'TATACONSUM.NS',
     'JIOFIN': 'JIOFIN.NS',
@@ -25,7 +21,7 @@ TICKER_MAP = {
     'ENGIND': 'ENGINERSIN.NS',
     'LIC': 'LICI.NS',
     'DRREDD': 'DRREDDY.NS',
-    'SEQSCI': 'STAR.NS',         # Sequent Scientific aligns with Strides/Star pharma restructuring metrics
+    'SEQSCI': 'STAR.NS',         
     'JSWENE': 'JSWENERGY.NS',
     'NHPC': 'NHPC.NS',
     'NTPC': 'NTPC.NS',
@@ -40,11 +36,10 @@ TICKER_MAP = {
     'RELIND': 'RELIANCE.NS',
     'GUJPPL': 'GPPL.NS',
     'IDECEL': 'IDEA.NS',
-    
-    # --- UNLISTED PRIVATE HOLDINGS ---
     'TATCAP': 'UNLISTED',
     'LGELEC': 'UNLISTED'
 }
+
 def run_weekly_analysis():
     portfolio_file = "portfolio.csv"
     if not os.path.exists(portfolio_file):
@@ -55,6 +50,7 @@ def run_weekly_analysis():
     df.columns = df.columns.str.strip()
 
     analysis_results = []
+    telegram_lines = [] # To store compact lines for mobile view
 
     for _, row in df.iterrows():
         broker_symbol = str(row["Stock Symbol"]).strip()
@@ -63,14 +59,11 @@ def run_weekly_analysis():
         avg_cost = row["Average Cost Price"]
         csv_current_price = row["Current Market Price"]
 
-        # Default fallback states
         current_price = csv_current_price
-        signal = "🟡 HOLD (Static Asset / Unlisted)"
+        signal = "🟡 HOLD (Static)"
         
-        # Pull standard map or append regional suffix
         yf_ticker = TICKER_MAP.get(broker_symbol, f"{broker_symbol}.NS")
 
-        # STRUCTURAL FIX: Skip Yahoo query if explicitly marked UNLISTED
         if yf_ticker != 'UNLISTED':
             try:
                 ticker_obj = yf.Ticker(yf_ticker)
@@ -82,18 +75,21 @@ def run_weekly_analysis():
                     dma_200 = data["Close"].rolling(window=200).mean().iloc[-1]
 
                     if current_price < dma_200:
-                        signal = "🔴 STRONG SELL (Below 200 DMA)"
+                        signal = "🔴 STRG SELL"
                     elif current_price > dma_50 and dma_50 > dma_200:
-                        signal = "🟢 BUY / ACCUMULATE (Golden Cross)"
+                        signal = "🟢 BUY"
                     else:
                         signal = "🟡 HOLD"
                 elif not data.empty:
                     current_price = data["Close"].iloc[-1]
-                    signal = "🟡 HOLD (Insufficient history for DMA metrics)"
+                    signal = "🟡 HOLD (New)"
             except Exception as e:
-                print(f"Bypassed live query for {broker_symbol}: {e}")
+                pass
 
         total_return = ((current_price - avg_cost) / avg_cost) * 100
+        
+        # Determine emoji for returns
+        return_emoji = "📈" if total_return >= 0 else "📉"
 
         analysis_results.append({
             "Symbol": broker_symbol,
@@ -105,20 +101,14 @@ def run_weekly_analysis():
             "Action Signal": signal
         })
 
-    # Output formatting logic
+        # Create a hyper-compact layout for the Telegram message
+        telegram_lines.append(f"{signal} | {broker_symbol} | Ret: {return_emoji}{total_return:+.1f}%")
+
+    # Generate Markdown Files for GitHub Website
     report_df = pd.DataFrame(analysis_results)
     date_str = datetime.now().strftime("%Y-%m-%d")
 
-    markdown_output = f"""# Weekly Portfolio Analysis Report - {date_str}
-
-## Executive Summary & Action Items
-Below is the automated status of your portfolio based on weekly closure trends.
-
-{report_df.to_markdown(index=False)}
-
----
-*Report generated automatically via GitHub Actions.*
-"""
+    markdown_output = f"# Weekly Portfolio Analysis Report - {date_str}\n\n{report_df.to_markdown(index=False)}"
 
     os.makedirs("reports", exist_ok=True)
     with open(f"reports/report_{date_str}.md", "w") as f:
@@ -126,6 +116,18 @@ Below is the automated status of your portfolio based on weekly closure trends.
 
     with open("README.md", "w") as f:
         f.write(markdown_output)
+
+    # --- NEW CAPABILITY FOR TELEGRAM OUTBOUND ---
+    # Combine lines into a single message body
+    summary_msg = f"📊 *Portfolio Snapshot ({date_str})*\n" + "\n".join(telegram_lines)
+    
+    # Save properly to GitHub Actions execution environment file if running in CI
+    if "GITHUB_OUTPUT" in os.environ:
+        with open(os.environ["GITHUB_OUTPUT"], "a") as env_file:
+            # Use multi-line string syntax for GitHub Actions outputs
+            env_file.write("TELEGRAM_SUMMARY<<EOF\n")
+            env_file.write(summary_msg + "\n")
+            env_file.write("EOF\n")
 
 if __name__ == "__main__":
     run_weekly_analysis()
