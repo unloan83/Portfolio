@@ -6,24 +6,24 @@ Below is the automated status of your portfolio based on weekly closure trends.
 | Symbol   | Company Name                   |   Qty | Avg Cost   | Current Price   | Total Return   | Action Signal                     |
 |:---------|:-------------------------------|------:|:-----------|:----------------|:---------------|:----------------------------------|
 | ASHLEY   | ASHOK LEYLAND LTD              |   106 | ₹98.98     | ₹155.44         | +57.04%        | 🔴 STRONG SELL (Below 200 DMA)     |
-| TATCAP   | TATA CAPITAL LIMITED           |    46 | ₹326.00    | ₹305.90         | -6.17%         | 🟡 HOLD (No Live Trend Data)       |
+| TATCAP   | TATA CAPITAL LIMITED           |    46 | ₹326.00    | ₹305.90         | -6.17%         | 🟡 HOLD (Static Asset / Unlisted)  |
 | FEDBAN   | FEDERAL BANK LTD               |    48 | ₹149.89    | ₹288.95         | +92.77%        | 🟢 BUY / ACCUMULATE (Golden Cross) |
 | HDFBAN   | HDFC BANK LIMITED              |   130 | ₹736.01    | ₹744.55         | +1.16%         | 🔴 STRONG SELL (Below 200 DMA)     |
-| LGELEC   | LG ELECTRONICS INDIA LTD       |    13 | ₹1,140.00  | ₹1,523.90       | +33.68%        | 🟡 HOLD (No Live Trend Data)       |
+| LGELEC   | LG ELECTRONICS INDIA LTD       |    13 | ₹1,140.00  | ₹1,523.90       | +33.68%        | 🟡 HOLD (Static Asset / Unlisted)  |
 | HDF250   | HDFC NIFTY Smallcap 250 ETF    |     9 | ₹168.83    | ₹170.66         | +1.08%         | 🟡 HOLD                            |
-| ICIGOL   | ICICI PRUDENTIAL GOLD ETF      |   250 | ₹138.74    | ₹133.12         | -4.05%         | 🟡 HOLD (No Live Trend Data)       |
-| ICINIF   | ICICI PRUDENTIAL NIFTY 50 ETF  |    36 | ₹271.19    | ₹266.01         | -1.91%         | 🟡 HOLD (No Live Trend Data)       |
-| ICIPSE   | ICICI PRUDENTIAL SILVER ETF    |   193 | ₹251.26    | ₹260.35         | +3.62%         | 🟡 HOLD (No Live Trend Data)       |
-| NIPNIT   | NIPPON INDIA ETF NIFTY IT      |    36 | ₹32.65     | ₹32.27          | -1.16%         | 🟡 HOLD (No Live Trend Data)       |
+| ICIGOL   | ICICI PRUDENTIAL GOLD ETF      |   250 | ₹138.74    | ₹133.12         | -4.05%         | 🟡 HOLD (Static Asset / Unlisted)  |
+| ICINIF   | ICICI PRUDENTIAL NIFTY 50 ETF  |    36 | ₹271.19    | ₹266.01         | -1.91%         | 🟡 HOLD (Static Asset / Unlisted)  |
+| ICIPSE   | ICICI PRUDENTIAL SILVER ETF    |   193 | ₹251.26    | ₹260.35         | +3.62%         | 🟡 HOLD (Static Asset / Unlisted)  |
+| NIPNIT   | NIPPON INDIA ETF NIFTY IT      |    36 | ₹32.65     | ₹32.27          | -1.16%         | 🟡 HOLD (Static Asset / Unlisted)  |
 | BHAELE   | BHARAT ELECTRONICS LTD         |    80 | ₹157.83    | ₹410.75         | +160.25%       | 🔴 STRONG SELL (Below 200 DMA)     |
 | TATGLO   | TATA CONSUMER PRODUCTS LIMITED |    30 | ₹800.62    | ₹1,178.40       | +47.19%        | 🟡 HOLD                            |
 | JIOFIN   | JIO FINANCIAL SERVICES LIMITED |    53 | ₹232.18    | ₹238.95         | +2.92%         | 🔴 STRONG SELL (Below 200 DMA)     |
 | WIPRO    | WIPRO LTD                      |   220 | ₹236.41    | ₹204.25         | -13.60%        | 🔴 STRONG SELL (Below 200 DMA)     |
 | ENGIND   | ENGINEERS INDIA LTD            |    21 | ₹178.51    | ₹231.70         | +29.80%        | 🟢 BUY / ACCUMULATE (Golden Cross) |
 | LIC      | LIFE INSURANCE CORP OF IND LIC |    80 | ₹898.01    | ₹411.35         | -54.19%        | 🔴 STRONG SELL (Below 200 DMA)     |
-| MIR150   | MIRAE ASSET NIF MIDCAP 150 ETF |    72 | ₹22.76     | ₹23.04          | +1.23%         | 🟡 HOLD (No Live Trend Data)       |
+| MIR150   | MIRAE ASSET NIF MIDCAP 150 ETF |    72 | ₹22.76     | ₹23.04          | +1.23%         | 🟡 HOLD                            |
 | DRREDD   | DR REDDYS LABORATORIES LTD     |     6 | ₹1,187.61  | ₹1,303.50       | +9.76%         | 🟢 BUY / ACCUMULATE (Golden Cross) |
-| SEQSCI   | VIYASH SCIENTIFIC LIMITED      |    10 | ₹123.45    | ₹261.94         | +112.18%       | 🟡 HOLD (No Live Trend Data)       |
+| SEQSCI   | VIYASH SCIENTIFIC LIMITED      |    10 | ₹123.45    | ₹261.94         | +112.18%       | 🟡 HOLD (Static Asset / Unlisted)  |
 | JSWENE   | JSW ENERGY LIMITED             |    54 | ₹508.70    | ₹595.05         | +16.97%        | 🟢 BUY / ACCUMULATE (Golden Cross) |
 | NHPC     | NHPC LIMITED                   |    55 | ₹58.42     | ₹78.87          | +35.01%        | 🔴 STRONG SELL (Below 200 DMA)     |
 | NTPC     | NTPC LIMITED                   |    12 | ₹277.23    | ₹386.90         | +39.56%        | 🟡 HOLD                            |
