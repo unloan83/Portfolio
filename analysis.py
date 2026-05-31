@@ -3,16 +3,21 @@ from datetime import datetime
 import pandas as pd
 import yfinance as yf
 
-# Maps broker codes from portfolio.csv to standard NSE symbols
+# Maps broker codes from portfolio.csv to standard Yahoo Finance symbols
 TICKER_MAP = {
     'ASHLEY': 'ASHOKLEY.NS',
     'FEDBAN': 'FEDERALBNK.NS',
     'HDFBAN': 'HDFCBANK.NS',
     'HDF250': 'HDFCSML250.NS',
+    
+    # --- FIXED ETF TICKERS ---
     'ICIGOL': 'ICICIGOLD.NS',
-    'ICINIF': 'ICICINIFTY.NS',
-    'ICIPSE': 'ICICISLV.NS',
-    'NIPNIT': 'NETFIT.NS',
+    'ICINIF': 'ICICINFITY.NS',   # Note the specific Yahoo typo tracking: NFITY instead of NIFTY
+    'ICIPSE': 'ICICISLVRE.NS',   # Silver ETF trading key
+    'NIPNIT': 'NETFIT.NS',       # Nippon India Nifty IT ETF
+    'MIR150': 'MNDF150ETF.NS',   # Mirae Asset Nifty Midcap 150 ETF
+    
+    # --- FIXED STOCK TICKERS ---
     'BHAELE': 'BEL.NS',
     'TATGLO': 'TATACONSUM.NS',
     'JIOFIN': 'JIOFIN.NS',
@@ -20,6 +25,7 @@ TICKER_MAP = {
     'ENGIND': 'ENGINERSIN.NS',
     'LIC': 'LICI.NS',
     'DRREDD': 'DRREDDY.NS',
+    'SEQSCI': 'SEQUENT.NS',      # Sequent Scientific Ltd
     'JSWENE': 'JSWENERGY.NS',
     'NHPC': 'NHPC.NS',
     'NTPC': 'NTPC.NS',
@@ -33,9 +39,13 @@ TICKER_MAP = {
     'PETLNG': 'PETRONET.NS',
     'RELIND': 'RELIANCE.NS',
     'GUJPPL': 'GPPL.NS',
-    'IDECEL': 'IDEA.NS'
+    'IDECEL': 'IDEA.NS',
+    
+    # --- UNLISTED / PRIVATE HOLDINGS ---
+    # These remain unlisted. The script fallback engine uses your CSV market prices
+    'TATCAP': 'UNLISTED',
+    'LGELEC': 'UNLISTED'
 }
-
 def run_weekly_analysis():
     portfolio_file = "portfolio.csv"
     if not os.path.exists(portfolio_file):
