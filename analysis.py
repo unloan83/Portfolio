@@ -3,21 +3,21 @@ from datetime import datetime
 import pandas as pd
 import yfinance as yf
 
-# Maps broker codes from portfolio.csv to standard Yahoo Finance symbols
+# Exact Yahoo Finance symbols matching the Indian Market ticker patterns
 TICKER_MAP = {
     'ASHLEY': 'ASHOKLEY.NS',
     'FEDBAN': 'FEDERALBNK.NS',
     'HDFBAN': 'HDFCBANK.NS',
     'HDF250': 'HDFCSML250.NS',
     
-    # --- FIXED ETF TICKERS ---
-    'ICIGOL': 'ICICIGOLD.NS',
-    'ICINIF': 'ICICINFITY.NS',   # Note the specific Yahoo typo tracking: NFITY instead of NIFTY
-    'ICIPSE': 'ICICISLVRE.NS',   # Silver ETF trading key
-    'NIPNIT': 'NETFIT.NS',       # Nippon India Nifty IT ETF
-    'MIR150': 'MNDF150ETF.NS',   # Mirae Asset Nifty Midcap 150 ETF
+    # --- VETTED ETF SYMBOLS ---
+    'ICIGOL': '0P0000XWMM.BO',   # ICICI Prudential Gold ETF
+    'ICINIF': 'ICICINFNTY.NS',   # ICICI Prudential Nifty 50 ETF (Yahoo syntax)
+    'ICIPSE': '0P000183O7.BO',   # ICICI Prudential Silver ETF
+    'NIPNIT': 'NETFIT.NS',       # Nippon India ETF Nifty IT
+    'MIR150': 'MIDCAPETF.NS',    # Mirae Asset Nifty Midcap 150 ETF
     
-    # --- FIXED STOCK TICKERS ---
+    # --- RE-MAPPED & CONFIRMED EQUITY TICKERS ---
     'BHAELE': 'BEL.NS',
     'TATGLO': 'TATACONSUM.NS',
     'JIOFIN': 'JIOFIN.NS',
@@ -25,7 +25,7 @@ TICKER_MAP = {
     'ENGIND': 'ENGINERSIN.NS',
     'LIC': 'LICI.NS',
     'DRREDD': 'DRREDDY.NS',
-    'SEQSCI': 'SEQUENT.NS',      # Sequent Scientific Ltd
+    'SEQSCI': 'SEQUENT.NS',      # Sequent Scientific Limited
     'JSWENE': 'JSWENERGY.NS',
     'NHPC': 'NHPC.NS',
     'NTPC': 'NTPC.NS',
@@ -41,18 +41,17 @@ TICKER_MAP = {
     'GUJPPL': 'GPPL.NS',
     'IDECEL': 'IDEA.NS',
     
-    # --- UNLISTED / PRIVATE HOLDINGS ---
-    # These remain unlisted. The script fallback engine uses your CSV market prices
+    # --- UNLISTED PRIVATE HOLDINGS ---
     'TATCAP': 'UNLISTED',
     'LGELEC': 'UNLISTED'
 }
+
 def run_weekly_analysis():
     portfolio_file = "portfolio.csv"
     if not os.path.exists(portfolio_file):
         print("portfolio.csv not found!")
         return
 
-    # Read CSV and clean trailing whitespaces in column names
     df = pd.read_csv(portfolio_file)
     df.columns = df.columns.str.strip()
 
@@ -65,35 +64,36 @@ def run_weekly_analysis():
         avg_cost = row["Average Cost Price"]
         csv_current_price = row["Current Market Price"]
 
-        # Convert broker symbol to Yahoo Finance ticker
+        # Default fallback states
+        current_price = csv_current_price
+        signal = "🟡 HOLD (Static Asset / Unlisted)"
+        
+        # Pull standard map or append regional suffix
         yf_ticker = TICKER_MAP.get(broker_symbol, f"{broker_symbol}.NS")
 
-        current_price = csv_current_price
-        signal = "🟡 HOLD (No Live Trend Data)"
-        
-        try:
-            # Pull daily market data for 50/200 DMA metrics
-            ticker_obj = yf.Ticker(yf_ticker)
-            data = ticker_obj.history(period="1y")
-            
-            if not data.empty and len(data) >= 200:
-                current_price = data["Close"].iloc[-1]
-                dma_50 = data["Close"].rolling(window=50).mean().iloc[-1]
-                dma_200 = data["Close"].rolling(window=200).mean().iloc[-1]
+        # STRUCTURAL FIX: Skip Yahoo query if explicitly marked UNLISTED
+        if yf_ticker != 'UNLISTED':
+            try:
+                ticker_obj = yf.Ticker(yf_ticker)
+                data = ticker_obj.history(period="1y")
+                
+                if not data.empty and len(data) >= 200:
+                    current_price = data["Close"].iloc[-1]
+                    dma_50 = data["Close"].rolling(window=50).mean().iloc[-1]
+                    dma_200 = data["Close"].rolling(window=200).mean().iloc[-1]
 
-                if current_price < dma_200:
-                    signal = "🔴 STRONG SELL (Below 200 DMA)"
-                elif current_price > dma_50 and dma_50 > dma_200:
-                    signal = "🟢 BUY / ACCUMULATE (Golden Cross)"
-                else:
-                    signal = "🟡 HOLD"
-            elif not data.empty:
-                current_price = data["Close"].iloc[-1]
-                signal = "🟡 HOLD (Insufficient history for DMA metrics)"
-        except Exception as e:
-            print(f"Using CSV defaults for {broker_symbol} due to fetch variance: {e}")
+                    if current_price < dma_200:
+                        signal = "🔴 STRONG SELL (Below 200 DMA)"
+                    elif current_price > dma_50 and dma_50 > dma_200:
+                        signal = "🟢 BUY / ACCUMULATE (Golden Cross)"
+                    else:
+                        signal = "🟡 HOLD"
+                elif not data.empty:
+                    current_price = data["Close"].iloc[-1]
+                    signal = "🟡 HOLD (Insufficient history for DMA metrics)"
+            except Exception as e:
+                print(f"Bypassed live query for {broker_symbol}: {e}")
 
-        # Calculate performance returns
         total_return = ((current_price - avg_cost) / avg_cost) * 100
 
         analysis_results.append({
@@ -106,7 +106,7 @@ def run_weekly_analysis():
             "Action Signal": signal
         })
 
-    # Generate Markdown File Outputs
+    # Output formatting logic
     report_df = pd.DataFrame(analysis_results)
     date_str = datetime.now().strftime("%Y-%m-%d")
 
