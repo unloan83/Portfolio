@@ -32,6 +32,7 @@ SECTOR_MAP = {
 
 def run_weekly_analysis():
     portfolio_file = "portfolio.csv"
+    tracking_file = "re-engineering.csv"
     if not os.path.exists(portfolio_file):
         return
 
@@ -44,10 +45,10 @@ def run_weekly_analysis():
     total_portfolio_value = df['Current_Value'].sum()
     df['Weight_%'] = (df['Current_Value'] / total_portfolio_value) * 100
     
-    # Calculate global industry concentrations
     sector_allocations = df.groupby('Sector')['Weight_%'].sum().to_dict()
 
     analysis_results = []
+    tracking_rows = []
     telegram_lines = []
     date_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -63,23 +64,21 @@ def run_weekly_analysis():
         yf_ticker = TICKER_MAP.get(broker_symbol, f"{broker_symbol}.NS")
         current_price = csv_current_price
         
-        # Base Agent Scores
         fundamental_pass = True
         technical_trend = "NEUTRAL"
         is_overextended = False
         
-        # Skip API polling for private equities
         if yf_ticker != 'UNLISTED':
             try:
                 ticker_obj = yf.Ticker(yf_ticker)
                 
-                # Sub-Agent A: Fundamental Quality Layer
+                # Fundamental Agent
                 info = ticker_obj.info
-                roe = info.get('returnOnEquity', 0.15) # Default pass fallback if missing
+                roe = info.get('returnOnEquity', 0.15)
                 if roe is not None and roe < 0.10: 
-                    fundamental_pass = False # Flag low-efficiency operations
+                    fundamental_pass = False 
                 
-                # Sub-Agent B: Momentum / Velocity Layer
+                # Momentum Agent
                 data = ticker_obj.history(period="1y")
                 if not data.empty and len(data) >= 200:
                     current_price = data["Close"].iloc[-1]
@@ -90,37 +89,36 @@ def run_weekly_analysis():
                         technical_trend = "BEARISH"
                     elif current_price > dma_50 and dma_50 > dma_200:
                         technical_trend = "BULLISH"
-                        # Check for vertical hyper-extensions (price stretched > 25% above 50 DMA)
                         if current_price > (dma_50 * 1.25):
                             is_overextended = True
             except Exception:
                 pass
 
-        # --- EXECUTIVE COORDINATOR ENGINE: RULE AGGREGATION ---
+        # --- EXECUTIVE COORDINATOR ENGINE ---
         sector_risk_exposure = sector_allocations.get(stock_sector, 0)
         total_return = ((current_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
-        # Signal Synthesis
         if technical_trend == "BEARISH":
             signal = "🔴 STRG SELL"
-            explanation = "Underlying macro trend broken (Below 200 DMA)."
+            explanation = "Below 200 DMA structural breakdown."
         elif is_overextended:
             signal = "🟡 HOLD / PEAK"
-            explanation = "Technically overextended. High risk of near-term mean reversion."
+            explanation = "Overextended >25% above 50 DMA."
         elif not fundamental_pass:
             signal = "🟡 HOLD / RISK"
-            explanation = "Positive technical momentum but sub-par fundamental capital efficiency (ROE)."
+            explanation = "Weak operational efficiency ROE < 10%."
         elif sector_risk_exposure > 25.0:
             signal = "⚠️ SECTOR CAP"
-            explanation = f"Individual stock healthy, but combined {stock_sector} weight ({sector_risk_exposure:.1f}%) exceeds safety bounds."
+            explanation = f"{stock_sector} cluster concentration danger ({sector_risk_exposure:.1f}%)."
         elif technical_trend == "BULLISH":
             signal = "🟢 ACCUMULATE"
-            explanation = "Aligned structural uptrend with healthy allocation buffers."
+            explanation = "Healthy structural accumulation channel."
         else:
             signal = "🟡 HOLD"
             explanation = "Sideways consolidation pattern."
 
+        # Save to Main Display DataFrame
         analysis_results.append({
             "Symbol": broker_symbol,
             "Sector": stock_sector,
@@ -130,16 +128,28 @@ def run_weekly_analysis():
             "Reasoning Matrix": explanation
         })
 
-        # Compact message mapping for clean Telegram views
+        # --- LOG TO HISTORY TRACKING ARRAY ---
+        tracking_rows.append({
+            "Analysis_Date": date_str,
+            "Stock_Symbol": broker_symbol,
+            "Price_At_Signal": round(current_price, 2),
+            "Model_Signal": signal,
+            "Trigger_Reason": explanation
+        })
+
         telegram_lines.append(f"{signal} | {broker_symbol} ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}%")
 
-    # Output generation logs
-    report_df = pd.DataFrame(analysis_results)
-    
-    # Sort by sizing weight to prioritize exposure visibility
-    report_df = report_df.sort_values(by="Weight", ascending=False)
+    # --- COMPILING THE HISTORICAL TIME SERIES RECORD ---
+    new_log_df = pd.DataFrame(tracking_rows)
+    if os.path.exists(tracking_file):
+        # Append without writing headers if file already exists
+        new_log_df.to_csv(tracking_file, mode='a', index=False, header=False)
+    else:
+        # Create fresh file with schema headers
+        new_log_df.to_csv(tracking_file, mode='w', index=False, header=True)
 
-    # Compile the Top Sector Exposure table for terminal view clarity
+    # Output rendering logs
+    report_df = pd.DataFrame(analysis_results).sort_values(by="Weight", ascending=False)
     sector_summary_md = "\n### Sector Concentration Metrics\n"
     for sec, w in sorted(sector_allocations.items(), key=lambda x: x[1], reverse=True):
         sector_summary_md += f"* **{sec}**: {w:.1f}%\n"
@@ -150,8 +160,7 @@ def run_weekly_analysis():
     with open("README.md", "w") as f:
         f.write(markdown_output)
 
-    # Send consolidated telegram batch payload 
-    summary_msg = f"🛡️ *Multi-Agent Portfolio Matrix ({date_str})*\n\n" + "\n".join(telegram_lines[:18]) # Fits crisp within text limit boundaries
+    summary_msg = f"🛡️ *Multi-Agent Portfolio Matrix ({date_str})*\n\n" + "\n".join(telegram_lines[:18])
     if "GITHUB_OUTPUT" in os.environ:
         with open(os.environ["GITHUB_OUTPUT"], "a") as env_file:
             env_file.write("TELEGRAM_SUMMARY<<EOF\n")
