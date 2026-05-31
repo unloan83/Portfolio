@@ -27,6 +27,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run Analysis Model
+      id: run_script
       run: python analysis.py
 
     - name: Commit and Push Report
@@ -34,12 +35,12 @@ jobs:
         git config --global user.name "Portfolio Automation Bot"
         git config --global user.email "bot@github.com"
         git add reports/*.md README.md || true
-        # Commit only if files have structural updates
         git diff-index --quiet HEAD || git commit -m "Automated Weekly Report Update: $(date +'%Y-%m-%d')"
         git push
 
-    - name: Send Notification to Telegram via Curl
+    - name: Send Summary Table to Telegram via Curl
       run: |
         curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
           -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
-          -d "text=🚀 Portfolio Analysis Complete! Your weekly stock portfolio evaluation has been compiled successfully. Check your GitHub repository homepage to review the updated Buy/Sell/Hold signals."
+          -d "parse_mode=Markdown" \
+          --data-urlencode "text=${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
