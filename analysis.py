@@ -12,7 +12,7 @@ TICKER_MAP = {
     
     # --- VETTED TRADEABLE ETF TICKERS (NSE) ---
     'ICIGOL': 'GOLDBEES.NS',     # Replaced with standard liquid Gold ETF (or use ICICIGOLD.NS if preferred)
-    'ICINIF': 'ICICINIFTY.NS',   # Standard ICICI Prudential Nifty 50 ETF
+    'ICINIF': 'ICICINFNTY.NS',   # Standard ICICI Prudential Nifty 50 ETF
     'ICIPSE': 'SILVERBEES.NS',   # Highly liquid Silver ETF standard tracking proxy
     'NIPNIT': 'NIFTYIETF.NS',    # Nippon India ETF Nifty IT (Corrected exchange ticker)
     'MIR150': 'MOMENTUM.NS',     # Standardized momentum proxy or your active index ticker
