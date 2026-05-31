@@ -11,19 +11,19 @@ Below is the automated status of your portfolio based on weekly closure trends.
 | HDFBAN   | HDFC BANK LIMITED              |   130 | ₹736.01    | ₹744.55         | +1.16%         | 🔴 STRONG SELL (Below 200 DMA)     |
 | LGELEC   | LG ELECTRONICS INDIA LTD       |    13 | ₹1,140.00  | ₹1,523.90       | +33.68%        | 🟡 HOLD (Static Asset / Unlisted)  |
 | HDF250   | HDFC NIFTY Smallcap 250 ETF    |     9 | ₹168.83    | ₹170.66         | +1.08%         | 🟡 HOLD                            |
-| ICIGOL   | ICICI PRUDENTIAL GOLD ETF      |   250 | ₹138.74    | ₹133.12         | -4.05%         | 🟡 HOLD (Static Asset / Unlisted)  |
+| ICIGOL   | ICICI PRUDENTIAL GOLD ETF      |   250 | ₹138.74    | ₹128.65         | -7.27%         | 🟢 BUY / ACCUMULATE (Golden Cross) |
 | ICINIF   | ICICI PRUDENTIAL NIFTY 50 ETF  |    36 | ₹271.19    | ₹266.01         | -1.91%         | 🟡 HOLD (Static Asset / Unlisted)  |
-| ICIPSE   | ICICI PRUDENTIAL SILVER ETF    |   193 | ₹251.26    | ₹260.35         | +3.62%         | 🟡 HOLD (Static Asset / Unlisted)  |
-| NIPNIT   | NIPPON INDIA ETF NIFTY IT      |    36 | ₹32.65     | ₹32.27          | -1.16%         | 🟡 HOLD (Static Asset / Unlisted)  |
+| ICIPSE   | ICICI PRUDENTIAL SILVER ETF    |   193 | ₹251.26    | ₹249.37         | -0.75%         | 🟢 BUY / ACCUMULATE (Golden Cross) |
+| NIPNIT   | NIPPON INDIA ETF NIFTY IT      |    36 | ₹32.65     | ₹266.01         | +714.73%       | 🔴 STRONG SELL (Below 200 DMA)     |
 | BHAELE   | BHARAT ELECTRONICS LTD         |    80 | ₹157.83    | ₹410.75         | +160.25%       | 🔴 STRONG SELL (Below 200 DMA)     |
 | TATGLO   | TATA CONSUMER PRODUCTS LIMITED |    30 | ₹800.62    | ₹1,178.40       | +47.19%        | 🟡 HOLD                            |
 | JIOFIN   | JIO FINANCIAL SERVICES LIMITED |    53 | ₹232.18    | ₹238.95         | +2.92%         | 🔴 STRONG SELL (Below 200 DMA)     |
 | WIPRO    | WIPRO LTD                      |   220 | ₹236.41    | ₹204.25         | -13.60%        | 🔴 STRONG SELL (Below 200 DMA)     |
 | ENGIND   | ENGINEERS INDIA LTD            |    21 | ₹178.51    | ₹231.70         | +29.80%        | 🟢 BUY / ACCUMULATE (Golden Cross) |
 | LIC      | LIFE INSURANCE CORP OF IND LIC |    80 | ₹898.01    | ₹411.35         | -54.19%        | 🔴 STRONG SELL (Below 200 DMA)     |
-| MIR150   | MIRAE ASSET NIF MIDCAP 150 ETF |    72 | ₹22.76     | ₹23.04          | +1.23%         | 🟡 HOLD                            |
+| MIR150   | MIRAE ASSET NIF MIDCAP 150 ETF |    72 | ₹22.76     | ₹31.60          | +38.84%        | 🟡 HOLD                            |
 | DRREDD   | DR REDDYS LABORATORIES LTD     |     6 | ₹1,187.61  | ₹1,303.50       | +9.76%         | 🟢 BUY / ACCUMULATE (Golden Cross) |
-| SEQSCI   | VIYASH SCIENTIFIC LIMITED      |    10 | ₹123.45    | ₹261.94         | +112.18%       | 🟡 HOLD (Static Asset / Unlisted)  |
+| SEQSCI   | VIYASH SCIENTIFIC LIMITED      |    10 | ₹123.45    | ₹1,111.80       | +800.61%       | 🟢 BUY / ACCUMULATE (Golden Cross) |
 | JSWENE   | JSW ENERGY LIMITED             |    54 | ₹508.70    | ₹595.05         | +16.97%        | 🟢 BUY / ACCUMULATE (Golden Cross) |
 | NHPC     | NHPC LIMITED                   |    55 | ₹58.42     | ₹78.87          | +35.01%        | 🔴 STRONG SELL (Below 200 DMA)     |
 | NTPC     | NTPC LIMITED                   |    12 | ₹277.23    | ₹386.90         | +39.56%        | 🟡 HOLD                            |
