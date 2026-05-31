@@ -38,13 +38,8 @@ jobs:
         git diff-index --quiet HEAD || git commit -m "Automated Weekly Report Update: $(date +'%Y-%m-%d')"
         git push
 
-    - name: Send Notification to Telegram
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_TO }}
-        token: ${{ secrets.TELEGRAM_TOKEN }}
-        message: |
-          🚀 Portfolio Analysis Complete!
-          
-          Your weekly stock portfolio evaluation has been compiled successfully. 
-          Check your GitHub repository homepage to review the updated Buy/Sell/Hold signals and structural reports.
+    - name: Send Notification to Telegram via Curl
+      run: |
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+          -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
+          -d "text=🚀 Portfolio Analysis Complete! Your weekly stock portfolio evaluation has been compiled successfully. Check your GitHub repository homepage to review the updated Buy/Sell/Hold signals."
