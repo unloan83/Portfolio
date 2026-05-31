@@ -1,21 +1,16 @@
 name: Weekly Portfolio Stock Analysis
-- name: Send Notification to Telegram
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.TELEGRAM_CHAT_ID }}
-        token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        message: "Weekly Stock Portfolio Analysis Completed! Check your GitHub Readme for buy/sell actions."
+
 on:
   schedule:
     # Runs every Saturday at 00:00 UTC (5:30 AM IST)
     - cron: '0 0 * * 6'
-  workflow_dispatch: # Allows you to manually trigger the run anytime via GitHub UI
+  workflow_dispatch: # Allows manual trigger via GitHub UI
 
 jobs:
   analyze_and_report:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Allows the workflow to commit files back to your repo
+      contents: write # Crucial for pushing report updates back to the repo
 
     steps:
     - name: Checkout Code
@@ -24,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-node-version: '3.10'
+        python-version: '3.10'
         cache: 'pip'
 
     - name: Install Dependencies
@@ -39,7 +34,18 @@ jobs:
       run: |
         git config --global user.name "Portfolio Automation Bot"
         git config --global user.email "bot@github.com"
-        git add reports/*.md README.md
-        # Only commit if there are changes
+        git add reports/*.md README.md || true
+        # Commit only if files have structural updates
         git diff-index --quiet HEAD || git commit -m "Automated Weekly Report Update: $(date +'%Y-%m-%d')"
         git push
+
+    - name: Send Notification to Telegram
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: |
+          🚀 Portfolio Analysis Complete!
+          
+          Your weekly stock portfolio evaluation has been compiled successfully. 
+          Check your GitHub repository homepage to review the updated Buy/Sell/Hold signals and structural reports.
