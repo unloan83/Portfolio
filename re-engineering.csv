@@ -560,3 +560,36 @@ Analysis_Date,Stock_Symbol,Price_At_Signal,Model_Signal,Trigger_Reason
 2026-07-25,RELIND,1278.0,🔴 STRG SELL,Below 200 DMA structural breakdown.
 2026-07-25,GUJPPL,149.23,🔴 STRG SELL,Below 200 DMA structural breakdown.
 2026-07-25,IDECEL,13.13,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,ASHLEY,157.5,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,TATCAP,305.9,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,FEDBAN,357.25,🟢 ACCUMULATE,Healthy structural accumulation channel.
+2026-07-29,HDFBAN,735.4,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,LGELEC,1523.9,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,HDF250,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,ICIGOL,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,ICINIF,266.01,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,ICIPSE,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,NIPNIT,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,BHAELE,389.0,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,TATGLO,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,JIOFIN,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,WIPRO,181.12,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,ENGIND,222.59,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,LIC,427.15,🟢 ACCUMULATE,Healthy structural accumulation channel.
+2026-07-29,MIR150,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,DRREDD,1135.6,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,SEQSCI,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,JSWENE,544.25,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,NHPC,78.28,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,NTPC,343.75,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,NTPGRE,92.27,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,SJVLIM,,🟡 HOLD / RISK,Weak operational efficiency ROE < 10%.
+2026-07-29,TATPOW,371.35,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,GAIL,175.15,🟡 HOLD / RISK,Weak operational efficiency ROE < 10%.
+2026-07-29,GUJGA,401.15,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,HINPET,400.05,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,ONGC,238.91,🔴 STRG SELL,Below 200 DMA structural breakdown.
+2026-07-29,PETLNG,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,RELIND,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,GUJPPL,,🟡 HOLD,Sideways consolidation pattern.
+2026-07-29,IDECEL,12.95,🟡 HOLD,Sideways consolidation pattern.
