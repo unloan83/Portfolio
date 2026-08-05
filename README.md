@@ -1,37 +1,37 @@
-# Orchestrated Multi-Agent Portfolio Audit - 2026-08-01
+# Orchestrated Multi-Agent Portfolio Audit - 2026-08-05
 
 ### Asset Health Assessment
 | Symbol   | Sector               | Weight   | Total Return   | Action Signal   | Reasoning Matrix                         |
 |:---------|:---------------------|:---------|:---------------|:----------------|:-----------------------------------------|
 | ICIPSE   | Other ETFs/Misc      | 7.7%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
-| WIPRO    | IT                   | 6.9%     | -22.32%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| TATGLO   | Consumption          | 5.4%     | +35.28%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| WIPRO    | IT                   | 6.9%     | -21.20%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| TATGLO   | Consumption          | 5.4%     | +36.39%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
 | ICIGOL   | Other ETFs/Misc      | 5.1%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
-| BHAELE   | Defense              | 5.0%     | +145.74%       | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| LIC      | Insurance            | 5.0%     | -52.71%        | 🟢 ACCUMULATE    | Healthy structural accumulation channel. |
-| JSWENE   | Power                | 4.9%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
-| IDECEL   | Telecom              | 3.2%     | +76.05%        | 🟡 HOLD          | Sideways consolidation pattern.          |
+| BHAELE   | Defense              | 5.0%     | +148.05%       | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| LIC      | Insurance            | 5.0%     | -56.43%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| JSWENE   | Power                | 4.9%     | +11.66%        | 🟢 ACCUMULATE    | Healthy structural accumulation channel. |
+| IDECEL   | Telecom              | 3.2%     | +74.56%        | 🟡 HOLD          | Sideways consolidation pattern.          |
 | LGELEC   | Consumer Electronics | 3.0%     | +33.68%        | 🟡 HOLD          | Sideways consolidation pattern.          |
-| ASHLEY   | Auto                 | 2.5%     | +67.89%        | 🟡 HOLD          | Sideways consolidation pattern.          |
+| ASHLEY   | Auto                 | 2.5%     | +73.85%        | 🟡 HOLD          | Sideways consolidation pattern.          |
 | TATCAP   | Financial Services   | 2.2%     | -6.17%         | 🟡 HOLD          | Sideways consolidation pattern.          |
-| NTPGRE   | Power                | 2.2%     | -16.64%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| FEDBAN   | Banking              | 2.1%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
-| RELIND   | Oil & Gas            | 15.4%    | +12.87%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| HDFBAN   | Banking              | 14.8%    | +1.65%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| JIOFIN   | Financial Services   | 1.9%     | +10.46%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| ONGC     | Oil & Gas            | 1.6%     | -0.41%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| GAIL     | Oil & Gas            | 1.5%     | +16.64%        | 🟡 HOLD / RISK   | Weak operational efficiency ROE < 10%.   |
+| NTPGRE   | Power                | 2.2%     | -16.00%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| FEDBAN   | Banking              | 2.1%     | +141.81%       | 🟢 ACCUMULATE    | Healthy structural accumulation channel. |
+| RELIND   | Oil & Gas            | 15.4%    | +11.41%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| HDFBAN   | Banking              | 14.8%    | +0.81%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| JIOFIN   | Financial Services   | 1.9%     | +14.14%        | 🟡 HOLD          | Sideways consolidation pattern.          |
+| ONGC     | Oil & Gas            | 1.6%     | -0.63%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| GAIL     | Oil & Gas            | 1.5%     | +12.50%        | 🟢 ACCUMULATE    | Healthy structural accumulation channel. |
 | ICINIF   | Other ETFs/Misc      | 1.5%     | -1.91%         | 🟡 HOLD          | Sideways consolidation pattern.          |
-| DRREDD   | Pharma               | 1.2%     | -3.33%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| SJVLIM   | Power                | 0.8%     | -21.66%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| HINPET   | Oil & Gas            | 0.8%     | +4.77%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| NTPC     | Power                | 0.7%     | +25.26%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| NHPC     | Power                | 0.7%     | +34.77%        | 🟡 HOLD / RISK   | Weak operational efficiency ROE < 10%.   |
-| ENGIND   | Infrastructure       | 0.7%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
-| PETLNG   | Oil & Gas            | 0.6%     | -11.04%        | 🟢 ACCUMULATE    | Healthy structural accumulation channel. |
-| TATPOW   | Power                | 0.5%     | +34.27%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
-| GUJPPL   | Infrastructure       | 0.5%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
-| SEQSCI   | Pharma               | 0.4%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
+| DRREDD   | Pharma               | 1.2%     | -1.26%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| SJVLIM   | Power                | 0.8%     | -21.22%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| HINPET   | Oil & Gas            | 0.8%     | +5.24%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| NTPC     | Power                | 0.7%     | +23.96%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| NHPC     | Power                | 0.7%     | +37.80%        | 🟡 HOLD / RISK   | Weak operational efficiency ROE < 10%.   |
+| ENGIND   | Infrastructure       | 0.7%     | +25.98%        | 🟡 HOLD          | Sideways consolidation pattern.          |
+| PETLNG   | Oil & Gas            | 0.6%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
+| TATPOW   | Power                | 0.5%     | +34.02%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| GUJPPL   | Infrastructure       | 0.5%     | +77.79%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.      |
+| SEQSCI   | Pharma               | 0.4%     | +705.67%       | 🟡 HOLD          | Sideways consolidation pattern.          |
 | GUJGA    | Oil & Gas            | 0.4%     | -14.32%        | 🟡 HOLD          | Sideways consolidation pattern.          |
 | MIR150   | Other ETFs/Misc      | 0.3%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
 | HDF250   | Other ETFs/Misc      | 0.2%     | +nan%          | 🟡 HOLD          | Sideways consolidation pattern.          |
