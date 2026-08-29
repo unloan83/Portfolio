@@ -857,3 +857,36 @@ Analysis_Date,Stock_Symbol,Price_At_Signal,Model_Signal,Trigger_Reason
 2026-08-26,RELIND,1317.0,🔴 STRG SELL,Below 200 DMA structural breakdown.
 2026-08-26,GUJPPL,,🟡 HOLD,Sideways consolidation pattern.
 2026-08-26,IDECEL,15.19,🟢 ACCUMULATE,Healthy structural accumulation channel.
+2026-08-29,ASHLEY,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,TATCAP,305.9,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,FEDBAN,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,HDFBAN,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,LGELEC,1523.9,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,HDF250,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,ICIGOL,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,ICINIF,266.01,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,ICIPSE,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,NIPNIT,32.27,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,BHAELE,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,TATGLO,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,JIOFIN,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,WIPRO,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,ENGIND,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,LIC,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,MIR150,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,DRREDD,,🟡 HOLD / RISK,Weak operational efficiency ROE < 10%.
+2026-08-29,SEQSCI,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,JSWENE,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,NHPC,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,NTPC,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,NTPGRE,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,SJVLIM,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,TATPOW,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,GAIL,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,GUJGA,401.15,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,HINPET,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,ONGC,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,PETLNG,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,RELIND,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,GUJPPL,,🟡 HOLD,Sideways consolidation pattern.
+2026-08-29,IDECEL,,🟡 HOLD,Sideways consolidation pattern.
