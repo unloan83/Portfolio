@@ -3,19 +3,21 @@ from datetime import datetime
 import pandas as pd
 import yfinance as yf
 
+from config import RISK_CONFIG
+
 # Fully vetted Exchange Tickers mapping
 TICKER_MAP = {
     'ASHLEY': 'ASHOKLEY.NS', 'FEDBAN': 'FEDERALBNK.NS', 'HDFBAN': 'HDFCBANK.NS',
-    'HDF250': 'HDFCSML250.NS', 'ICIGOL': 'GOLDBEES.NS', 'ICINIF': 'ICICINIFTY.NS',   
-    'ICIPSE': 'SILVERBEES.NS', 'NIPNIT': 'NIFTYIETF.NS', 'MIR150': 'MOMENTUM.NS',     
+    'HDF250': 'HDFCSML250.NS', 'ICIGOL': 'GOLDIETF.NS', 'ICINIF': 'NIFTYIETF.NS',
+    'ICIPSE': 'SILVERIETF.NS', 'NIPNIT': 'ITBEES.NS', 'MIR150': 'MIDCAPETF.NS',
     'BHAELE': 'BEL.NS', 'TATGLO': 'TATACONSUM.NS', 'JIOFIN': 'JIOFIN.NS',
     'WIPRO': 'WIPRO.NS', 'ENGIND': 'ENGINERSIN.NS', 'LIC': 'LICI.NS',
-    'DRREDD': 'DRREDDY.NS', 'SEQSCI': 'STAR.NS', 'JSWENE': 'JSWENERGY.NS',
+    'DRREDD': 'DRREDDY.NS', 'SEQSCI': 'VIYASH.NS', 'JSWENE': 'JSWENERGY.NS',
     'NHPC': 'NHPC.NS', 'NTPC': 'NTPC.NS', 'NTPGRE': 'NTPCGREEN.NS',
     'SJVLIM': 'SJVN.NS', 'TATPOW': 'TATAPOWER.NS', 'GAIL': 'GAIL.NS',
     'GUJGA': 'GUJGASLTD.NS', 'HINPET': 'HINDPETRO.NS', 'ONGC': 'ONGC.NS',
     'PETLNG': 'PETRONET.NS', 'RELIND': 'RELIANCE.NS', 'GUJPPL': 'GPPL.NS',
-    'IDECEL': 'IDEA.NS', 'TATCAP': 'UNLISTED', 'LGELEC': 'UNLISTED'
+    'IDECEL': 'IDEA.NS', 'TATCAP': 'TATACAP.NS', 'LGELEC': 'LGEINDIA.NS'
 }
 
 # Explicit sector definitions to track concentration rules
@@ -65,18 +67,21 @@ def run_weekly_analysis():
         current_price = csv_current_price
         
         fundamental_pass = True
+        fundamental_unknown = False
         technical_trend = "NEUTRAL"
         is_overextended = False
         
-        if yf_ticker != 'UNLISTED':
+        if yf_ticker not in ('UNLISTED', 'TODO_VERIFY'):
             try:
                 ticker_obj = yf.Ticker(yf_ticker)
                 
                 # Fundamental Agent
                 info = ticker_obj.info
-                roe = info.get('returnOnEquity', 0.15)
-                if roe is not None and roe < 0.10: 
-                    fundamental_pass = False 
+                roe = info.get('returnOnEquity')
+                fundamental_pass = (
+                    roe is None or roe >= RISK_CONFIG.minimum_roe
+                )
+                fundamental_unknown = roe is None
                 
                 # Momentum Agent
                 data = ticker_obj.history(period="1y")
@@ -89,28 +94,57 @@ def run_weekly_analysis():
                         technical_trend = "BEARISH"
                     elif current_price > dma_50 and dma_50 > dma_200:
                         technical_trend = "BULLISH"
-                        if current_price > (dma_50 * 1.25):
+                        if current_price > (
+                            dma_50 * RISK_CONFIG.overextension_multiple
+                        ):
                             is_overextended = True
-            except Exception:
-                pass
+                else:
+                    technical_trend = "NO_DATA"
+            except Exception as exc:
+                technical_trend = "FETCH_ERROR"
+                print(
+                    f"[warn] {broker_symbol} ({yf_ticker}) "
+                    f"{type(exc).__name__}: {exc}"
+                )
+        else:
+            technical_trend = "NO_TICKER"
 
         # --- EXECUTIVE COORDINATOR ENGINE ---
         sector_risk_exposure = sector_allocations.get(stock_sector, 0)
         total_return = ((current_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
-        if technical_trend == "BEARISH":
+        if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
+            signal = "⚪ NO DATA"
+            explanation = (
+                f"Could not evaluate ({technical_trend.replace('_', ' ').lower()}) "
+                "— verify manually."
+            )
+        elif (
+            sector_risk_exposure > RISK_CONFIG.max_sector_pct
+            and technical_trend == "BULLISH"
+        ):
+            signal = "⚠️ SECTOR CAP"
+            explanation = (
+                f"{stock_sector} cluster at {sector_risk_exposure:.1f}% — "
+                "would-be BUY blocked by concentration limit."
+            )
+        elif technical_trend == "BEARISH":
             signal = "🔴 STRG SELL"
             explanation = "Below 200 DMA structural breakdown."
         elif is_overextended:
             signal = "🟡 HOLD / PEAK"
-            explanation = "Overextended >25% above 50 DMA."
+            overextension_pct = RISK_CONFIG.overextension_multiple - 1
+            explanation = f"Overextended >{overextension_pct:.0%} above 50 DMA."
+        elif fundamental_unknown:
+            signal = "🟡 HOLD / REVIEW"
+            explanation = "ROE unavailable — verify fundamentals manually."
         elif not fundamental_pass:
             signal = "🟡 HOLD / RISK"
-            explanation = "Weak operational efficiency ROE < 10%."
-        elif sector_risk_exposure > 25.0:
-            signal = "⚠️ SECTOR CAP"
-            explanation = f"{stock_sector} cluster concentration danger ({sector_risk_exposure:.1f}%)."
+            explanation = (
+                "Weak operational efficiency ROE "
+                f"< {RISK_CONFIG.minimum_roe:.0%}."
+            )
         elif technical_trend == "BULLISH":
             signal = "🟢 ACCUMULATE"
             explanation = "Healthy structural accumulation channel."
