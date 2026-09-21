@@ -2,8 +2,10 @@ name: Weekly Portfolio Stock Analysis
 
 on:
   schedule:
-    # Runs every Saturday at 00:00 UTC (5:30 AM IST)
-    - cron: '0 0 * * 3,6'
+    # Note: NSE holidays are not excluded by this cron schedule and will produce stale-price rows on market holidays.
+    - cron: '50 3 * * 1-5'   # ~9:20 IST (03:50 UTC), weekdays
+    - cron: '50 6 * * 1-5'   # ~12:20 IST (06:50 UTC), weekdays
+    - cron: '45 9 * * 1-5'   # ~15:15 IST (09:45 UTC), weekdays
   workflow_dispatch: # Allows manual trigger via GitHub UI
 
 jobs:

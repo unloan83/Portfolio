@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import pandas as pd
 import yfinance as yf
 
@@ -52,7 +53,9 @@ def run_weekly_analysis():
     analysis_results = []
     tracking_rows = []
     telegram_lines = []
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    now_ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+    date_str = now_ist.strftime("%Y-%m-%d")
+    run_timestamp_ist = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
 
     for _, row in df.iterrows():
         broker_symbol = str(row["Stock Symbol"]).strip()
@@ -64,7 +67,10 @@ def run_weekly_analysis():
         stock_sector = row["Sector"]
 
         yf_ticker = TICKER_MAP.get(broker_symbol, f"{broker_symbol}.NS")
-        current_price = csv_current_price
+        current_price = None
+        dma_50 = None
+        dma_200 = None
+        roe = None
         
         fundamental_pass = True
         fundamental_unknown = False
@@ -76,7 +82,7 @@ def run_weekly_analysis():
                 ticker_obj = yf.Ticker(yf_ticker)
                 
                 # Fundamental Agent
-                info = ticker_obj.info
+                info = ticker_obj.info or {}
                 roe = info.get('returnOnEquity')
                 fundamental_pass = (
                     roe is None or roe >= RISK_CONFIG.minimum_roe
@@ -86,9 +92,9 @@ def run_weekly_analysis():
                 # Momentum Agent
                 data = ticker_obj.history(period="1y")
                 if not data.empty and len(data) >= 200:
-                    current_price = data["Close"].iloc[-1]
-                    dma_50 = data["Close"].rolling(window=50).mean().iloc[-1]
-                    dma_200 = data["Close"].rolling(window=200).mean().iloc[-1]
+                    current_price = float(data["Close"].iloc[-1])
+                    dma_50 = float(data["Close"].rolling(window=50).mean().iloc[-1])
+                    dma_200 = float(data["Close"].rolling(window=200).mean().iloc[-1])
 
                     if current_price < dma_200:
                         technical_trend = "BEARISH"
@@ -98,6 +104,8 @@ def run_weekly_analysis():
                             dma_50 * RISK_CONFIG.overextension_multiple
                         ):
                             is_overextended = True
+                    else:
+                        technical_trend = "NEUTRAL"
                 else:
                     technical_trend = "NO_DATA"
             except Exception as exc:
@@ -111,7 +119,8 @@ def run_weekly_analysis():
 
         # --- EXECUTIVE COORDINATOR ENGINE ---
         sector_risk_exposure = sector_allocations.get(stock_sector, 0)
-        total_return = ((current_price - avg_cost) / avg_cost) * 100
+        display_price = current_price if current_price is not None else csv_current_price
+        total_return = ((display_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
         if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
@@ -163,12 +172,31 @@ def run_weekly_analysis():
         })
 
         # --- LOG TO HISTORY TRACKING ARRAY ---
+        if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
+            log_price = None
+            log_dma_50 = None
+            log_dma_200 = None
+            log_roe = None
+        else:
+            log_price = round(current_price, 2) if current_price is not None else None
+            log_dma_50 = round(dma_50, 2) if dma_50 is not None else None
+            log_dma_200 = round(dma_200, 2) if dma_200 is not None else None
+            log_roe = round(roe, 4) if roe is not None else None
+
         tracking_rows.append({
             "Analysis_Date": date_str,
             "Stock_Symbol": broker_symbol,
-            "Price_At_Signal": round(current_price, 2),
+            "Price_At_Signal": log_price,
             "Model_Signal": signal,
-            "Trigger_Reason": explanation
+            "Trigger_Reason": explanation,
+            "run_timestamp_ist": run_timestamp_ist,
+            "current_price": log_price,
+            "dma_50": log_dma_50,
+            "dma_200": log_dma_200,
+            "roe": log_roe,
+            "portfolio_weight_pct": round(stock_weight, 2),
+            "sector": stock_sector,
+            "technical_trend": technical_trend
         })
 
         telegram_lines.append(f"{signal} | {broker_symbol} ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}%")
@@ -176,10 +204,14 @@ def run_weekly_analysis():
     # --- COMPILING THE HISTORICAL TIME SERIES RECORD ---
     new_log_df = pd.DataFrame(tracking_rows)
     if os.path.exists(tracking_file):
-        # Append without writing headers if file already exists
-        new_log_df.to_csv(tracking_file, mode='a', index=False, header=False)
+        existing_df = pd.read_csv(tracking_file)
+        if list(existing_df.columns) != list(new_log_df.columns):
+            existing_df = existing_df.reindex(columns=new_log_df.columns)
+            combined_df = pd.concat([existing_df, new_log_df], ignore_index=True)
+            combined_df.to_csv(tracking_file, index=False)
+        else:
+            new_log_df.to_csv(tracking_file, mode='a', index=False, header=False)
     else:
-        # Create fresh file with schema headers
         new_log_df.to_csv(tracking_file, mode='w', index=False, header=True)
 
     # Output rendering logs
