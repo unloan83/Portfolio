@@ -1,4 +1,4 @@
-name: Weekly Portfolio Stock Analysis
+name: Intraday Portfolio Stock Analysis
 
 on:
   schedule:
