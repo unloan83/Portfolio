@@ -233,5 +233,67 @@ def run_weekly_analysis():
             env_file.write(summary_msg + "\n")
             env_file.write("EOF\n")
 
+    # Send direct Telegram notification if credentials are provided or present in credentials folder
+    summary_msg_html = f"<b>🛡️ Multi-Agent Portfolio Matrix ({date_str})</b>\n\n" + "\n".join(telegram_lines[:18])
+    send_telegram_notification(summary_msg_html)
+
+def send_telegram_notification(summary_msg: str) -> bool:
+    """
+    Sends a summary notification to Telegram using bot token and chat ID
+    from environment variables or local credentials env files.
+    Redacts all secrets in logs.
+    """
+    import json
+    import urllib.request
+    
+    token = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_TO") or os.environ.get("CHAT_ID")
+
+    # If missing in env, search known local credential file locations
+    if not token or not chat_id:
+        env_paths = [
+            "/home/user/projects/retained_credentials_and_data/Telegram_Credentials.env",
+            os.path.join(os.path.dirname(__file__), "..", "retained_credentials_and_data", "Telegram_Credentials.env"),
+            os.path.join(os.path.dirname(__file__), "Telegram_Credentials.env"),
+            os.path.join(os.path.dirname(__file__), ".env"),
+        ]
+        for path in env_paths:
+            if os.path.exists(path):
+                try:
+                    with open(path, "r") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith("#") and "=" in line:
+                                k, v = line.split("=", 1)
+                                k, v = k.strip(), v.strip().strip("'\"")
+                                if k in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_TOKEN") and not token:
+                                    token = v
+                                elif k in ("TELEGRAM_CHAT_ID", "TELEGRAM_TO", "CHAT_ID") and not chat_id:
+                                    chat_id = v
+                except Exception as exc:
+                    print(f"[warn] Error reading credential file {path}: {type(exc).__name__}")
+
+    if not token or not chat_id:
+        print("[info] Telegram credentials not configured. Skipping outbound message.")
+        return False
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": summary_msg,
+        "parse_mode": "HTML",
+    }
+    
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            print("[info] Telegram notification dispatched successfully.")
+            return True
+    except Exception as exc:
+        print(f"[warn] Telegram dispatch failed: {type(exc).__name__}: {exc}")
+        return False
+
 if __name__ == "__main__":
     run_weekly_analysis()
+

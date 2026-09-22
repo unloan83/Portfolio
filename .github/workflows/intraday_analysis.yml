@@ -30,6 +30,9 @@ jobs:
 
     - name: Run Analysis Model
       id: run_script
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_TO }}
       run: python analysis.py
 
     - name: Commit and Push Report
@@ -43,7 +46,8 @@ jobs:
 
     - name: Send Summary Table to Telegram via Curl
       run: |
-        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+        curl -sS --fail -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
           -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
-          -d "parse_mode=Markdown" \
+          -d "parse_mode=HTML" \
           --data-urlencode "text=${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
+
