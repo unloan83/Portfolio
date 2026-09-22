@@ -6,17 +6,22 @@ on:
     - cron: '50 3 * * 1-5'   # ~9:20 IST (03:50 UTC), weekdays
     - cron: '50 6 * * 1-5'   # ~12:20 IST (06:50 UTC), weekdays
     - cron: '45 9 * * 1-5'   # ~15:15 IST (09:45 UTC), weekdays
-  workflow_dispatch: # Allows manual trigger via GitHub UI
+  workflow_dispatch: # Allows manual trigger via GitHub UI / API
+
+permissions:
+  contents: write
 
 jobs:
   analyze_and_report:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Crucial for pushing report updates back to the repo
+      contents: write # Explicit job-level write permission for pushing commits
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -36,18 +41,50 @@ jobs:
       run: python analysis.py
 
     - name: Commit and Push Report
+      id: push_step
       run: |
         git config --global user.name "Portfolio Automation Bot"
         git config --global user.email "bot@github.com"
-        # UPDATED: Added tracking file target to git tracking engine
         git add reports/*.md README.md re-engineering.csv || true
         git diff-index --quiet HEAD || git commit -m "Automated Weekly Report Update: $(date +'%Y-%m-%d')"
         git push
 
-    - name: Send Summary Table to Telegram via Curl
+    - name: Verify Push Synchronized on Origin
       run: |
-        curl -sS --fail -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
-          -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
-          -d "parse_mode=HTML" \
-          --data-urlencode "text=${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
+        LOCAL_SHA=$(git rev-parse HEAD)
+        git fetch origin main
+        REMOTE_SHA=$(git rev-parse origin/main)
+        echo "Local HEAD SHA:  $LOCAL_SHA"
+        echo "Remote main SHA: $REMOTE_SHA"
+        if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
+          echo "❌ CRITICAL ERROR: Local HEAD ($LOCAL_SHA) does not match origin/main ($REMOTE_SHA) after git push!"
+          git diff --stat HEAD origin/main
+          exit 1
+        fi
+        echo "✅ Verification Passed: origin/main is in sync with pushed commit $LOCAL_SHA."
 
+    - name: Send Summary Table to Telegram on Success
+      if: success()
+      continue-on-error: true
+      run: |
+        if [ -n "${{ secrets.TELEGRAM_TOKEN }}" ] && [ -n "${{ secrets.TELEGRAM_TO }}" ]; then
+          curl -sS --fail -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
+            -d "parse_mode=HTML" \
+            --data-urlencode "text=${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
+        else
+          echo "[info] Telegram secrets missing in GitHub Repository settings. Skipped workflow curl notification."
+        fi
+
+    - name: Send Alert to Telegram on Failure
+      if: failure()
+      continue-on-error: true
+      run: |
+        if [ -n "${{ secrets.TELEGRAM_TOKEN }}" ] && [ -n "${{ secrets.TELEGRAM_TO }}" ]; then
+          curl -sS -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
+            -d "parse_mode=HTML" \
+            --data-urlencode "text=⚠️ <b>Analysis ran but failed to commit or verify results</b> — check GitHub Actions logs."
+        else
+          echo "[warn] Pipeline failure occurred, but Telegram credentials are not configured in GitHub Secrets."
+        fi
