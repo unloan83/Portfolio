@@ -12,9 +12,10 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from analysis import TICKER_MAP  # noqa: E402
+from analysis import SECTOR_MAP, TICKER_MAP  # noqa: E402
 from backtest.backtester import Signal, run_backtest  # noqa: E402
 from backtest.yfinance_adapter import fetch_history  # noqa: E402
+from signal_engine import evaluate_signal  # noqa: E402
 
 
 class DmaCrossoverStrategy:
@@ -33,19 +34,30 @@ class DmaCrossoverStrategy:
             current_price = float(close.iloc[-1])
             dma_50 = float(close.rolling(50).mean().iloc[-1])
             dma_200 = float(close.rolling(200).mean().iloc[-1])
-            if current_price < dma_200 and symbol in held_symbols:
+            stock_sector = SECTOR_MAP.get(symbol, "Other ETFs/Misc")
+            eval_res = evaluate_signal(
+                current_price=current_price,
+                dma_50=dma_50,
+                dma_200=dma_200,
+                roe=None,
+                stock_sector=stock_sector,
+            )
+            if eval_res.technical_trend == "BEARISH" and symbol in held_symbols:
                 signals.append(
-                    Signal(symbol, "exit_long", "Close below 200 DMA")
+                    Signal(symbol, "exit_long", eval_res.explanation)
                 )
             elif (
-                current_price > dma_50
-                and dma_50 > dma_200
+                eval_res.technical_trend == "BULLISH"
+                and not eval_res.is_overextended
+                and eval_res.fundamental_pass
                 and symbol not in held_symbols
             ):
                 signals.append(
-                    Signal(symbol, "enter_long", "Close > 50 DMA > 200 DMA")
+                    Signal(symbol, "enter_long", eval_res.explanation)
                 )
         return signals
+
+
 
 
 def _portfolio_symbols(portfolio_path: Path) -> list[str]:

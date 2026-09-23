@@ -5,6 +5,7 @@ import pandas as pd
 import yfinance as yf
 
 from config import RISK_CONFIG
+from signal_engine import evaluate_signal
 
 # Fully vetted Exchange Tickers mapping
 TICKER_MAP = {
@@ -71,51 +72,32 @@ def run_weekly_analysis():
         dma_50 = None
         dma_200 = None
         roe = None
-        
-        fundamental_pass = True
-        fundamental_unknown = False
-        technical_trend = "NEUTRAL"
-        is_overextended = False
-        
+        technical_trend_override = None
+
         if yf_ticker not in ('UNLISTED', 'TODO_VERIFY'):
             try:
                 ticker_obj = yf.Ticker(yf_ticker)
-                
+
                 # Fundamental Agent
                 info = ticker_obj.info or {}
                 roe = info.get('returnOnEquity')
-                fundamental_pass = (
-                    roe is None or roe >= RISK_CONFIG.minimum_roe
-                )
-                fundamental_unknown = roe is None
-                
+
                 # Momentum Agent
                 data = ticker_obj.history(period="1y")
                 if not data.empty and len(data) >= 200:
                     current_price = float(data["Close"].iloc[-1])
                     dma_50 = float(data["Close"].rolling(window=50).mean().iloc[-1])
                     dma_200 = float(data["Close"].rolling(window=200).mean().iloc[-1])
-
-                    if current_price < dma_200:
-                        technical_trend = "BEARISH"
-                    elif current_price > dma_50 and dma_50 > dma_200:
-                        technical_trend = "BULLISH"
-                        if current_price > (
-                            dma_50 * RISK_CONFIG.overextension_multiple
-                        ):
-                            is_overextended = True
-                    else:
-                        technical_trend = "NEUTRAL"
                 else:
-                    technical_trend = "NO_DATA"
+                    technical_trend_override = "NO_DATA"
             except Exception as exc:
-                technical_trend = "FETCH_ERROR"
+                technical_trend_override = "FETCH_ERROR"
                 print(
                     f"[warn] {broker_symbol} ({yf_ticker}) "
                     f"{type(exc).__name__}: {exc}"
                 )
         else:
-            technical_trend = "NO_TICKER"
+            technical_trend_override = "NO_TICKER"
 
         # --- EXECUTIVE COORDINATOR ENGINE ---
         sector_risk_exposure = sector_allocations.get(stock_sector, 0)
@@ -123,43 +105,19 @@ def run_weekly_analysis():
         total_return = ((display_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
-        if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
-            signal = "⚪ NO DATA"
-            explanation = (
-                f"Could not evaluate ({technical_trend.replace('_', ' ').lower()}) "
-                "— verify manually."
-            )
-        elif (
-            sector_risk_exposure > RISK_CONFIG.max_sector_pct
-            and technical_trend == "BULLISH"
-        ):
-            signal = "⚠️ SECTOR CAP"
-            explanation = (
-                f"{stock_sector} cluster at {sector_risk_exposure:.1f}% — "
-                "would-be BUY blocked by concentration limit."
-            )
-        elif technical_trend == "BEARISH":
-            signal = "🔴 STRG SELL"
-            explanation = "Below 200 DMA structural breakdown."
-        elif is_overextended:
-            signal = "🟡 HOLD / PEAK"
-            overextension_pct = RISK_CONFIG.overextension_multiple - 1
-            explanation = f"Overextended >{overextension_pct:.0%} above 50 DMA."
-        elif fundamental_unknown:
-            signal = "🟡 HOLD / REVIEW"
-            explanation = "ROE unavailable — verify fundamentals manually."
-        elif not fundamental_pass:
-            signal = "🟡 HOLD / RISK"
-            explanation = (
-                "Weak operational efficiency ROE "
-                f"< {RISK_CONFIG.minimum_roe:.0%}."
-            )
-        elif technical_trend == "BULLISH":
-            signal = "🟢 ACCUMULATE"
-            explanation = "Healthy structural accumulation channel."
-        else:
-            signal = "🟡 HOLD"
-            explanation = "Sideways consolidation pattern."
+        eval_res = evaluate_signal(
+            current_price=current_price,
+            dma_50=dma_50,
+            dma_200=dma_200,
+            roe=roe,
+            stock_sector=stock_sector,
+            sector_risk_exposure=sector_risk_exposure,
+            technical_trend_override=technical_trend_override,
+            config=RISK_CONFIG,
+        )
+        signal = eval_res.signal
+        explanation = eval_res.explanation
+        technical_trend = eval_res.technical_trend
 
         # Save to Main Display DataFrame
         analysis_results.append({
