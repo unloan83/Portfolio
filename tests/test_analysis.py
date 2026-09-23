@@ -1,7 +1,10 @@
+from unittest.mock import MagicMock
+
 import numpy as np
 import pandas as pd
 
 import analysis
+
 
 
 class FakeTicker:
@@ -67,7 +70,15 @@ def test_no_data_and_sector_cap_are_explicit(tmp_path, monkeypatch):
     monkeypatch.setitem(analysis.SECTOR_MAP, "BULL", "Test Sector")
     monkeypatch.setattr(analysis.yf, "Ticker", FakeTicker)
 
-    analysis.run_weekly_analysis()
+    mock_notifier = MagicMock()
+    analysis.run_weekly_analysis(notify_fn=mock_notifier)
+
+    mock_notifier.assert_called_once()
+    sent_msg = mock_notifier.call_args[0][0]
+    assert "BULL" in sent_msg
+    assert "EMPTY" in sent_msg
+    assert "ERRSTOCK" in sent_msg
+    assert "UNLIST" in sent_msg
 
     tracking = pd.read_csv(tmp_path / "re-engineering.csv")
 
