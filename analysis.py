@@ -47,6 +47,13 @@ def send_telegram_notification(summary_msg: str) -> bool:
     chat_id = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_TO") or os.environ.get("CHAT_ID")
 
     # If missing in env, search known local credential file locations
+    if token:
+        token = token.strip()
+        if token.startswith("bot"):
+            token = token[3:]
+    if chat_id:
+        chat_id = str(chat_id).strip()
+
     if not token or not chat_id:
         env_paths = [
             "/home/user/projects/retained_credentials_and_data/Telegram_Credentials.env",
