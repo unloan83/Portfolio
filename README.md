@@ -3,39 +3,39 @@
 ### Asset Health Assessment
 | Symbol   | Sector               | Weight   | Total Return   | Action Signal   | Reasoning Matrix                                |
 |:---------|:---------------------|:---------|:---------------|:----------------|:------------------------------------------------|
-| ICIPSE   | Other ETFs/Misc      | 7.7%     | -10.07%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| WIPRO    | IT                   | 6.9%     | -30.68%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| TATGLO   | Consumption          | 5.4%     | +23.39%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| ICIGOL   | Other ETFs/Misc      | 5.1%     | -7.68%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| BHAELE   | Defense              | 5.0%     | +149.22%       | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| LIC      | Insurance            | 5.0%     | -55.23%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| JSWENE   | Power                | 4.9%     | -0.09%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| IDECEL   | Telecom              | 3.2%     | +90.80%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| LGELEC   | Consumer Electronics | 3.0%     | +49.05%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| ASHLEY   | Auto                 | 2.5%     | +59.87%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| TATCAP   | Financial Services   | 2.2%     | +2.98%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| NTPGRE   | Power                | 2.2%     | -11.82%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| FEDBAN   | Banking              | 2.1%     | +120.70%       | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| RELIND   | Oil & Gas            | 15.4%    | +5.65%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| HDFBAN   | Banking              | 14.8%    | -0.95%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| JIOFIN   | Financial Services   | 1.9%     | -2.07%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| ONGC     | Oil & Gas            | 1.6%     | -3.03%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| GAIL     | Oil & Gas            | 1.5%     | +10.95%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| ICIPSE   | Other ETFs/Misc      | 7.7%     | -10.20%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| WIPRO    | IT                   | 6.9%     | -30.78%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| TATGLO   | Consumption          | 5.4%     | +23.19%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| ICIGOL   | Other ETFs/Misc      | 5.1%     | -7.83%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| BHAELE   | Defense              | 5.0%     | +148.37%       | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| LIC      | Insurance            | 5.0%     | -54.79%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| JSWENE   | Power                | 4.9%     | +0.26%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| IDECEL   | Telecom              | 3.2%     | +91.07%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| LGELEC   | Consumer Electronics | 3.0%     | +48.92%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| ASHLEY   | Auto                 | 2.5%     | +58.92%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| TATCAP   | Financial Services   | 2.2%     | +3.14%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| NTPGRE   | Power                | 2.2%     | -11.64%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| FEDBAN   | Banking              | 2.1%     | +119.83%       | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| RELIND   | Oil & Gas            | 15.4%    | +5.22%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| HDFBAN   | Banking              | 14.8%    | -0.97%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| JIOFIN   | Financial Services   | 1.9%     | -2.14%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| ONGC     | Oil & Gas            | 1.6%     | -1.86%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| GAIL     | Oil & Gas            | 1.5%     | +11.76%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
 | ICINIF   | Other ETFs/Misc      | 1.5%     | -1.91%         | ⚪ NO DATA       | Could not evaluate (no data) — verify manually. |
-| DRREDD   | Pharma               | 1.2%     | +0.87%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| SJVLIM   | Power                | 0.8%     | -29.04%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| HINPET   | Oil & Gas            | 0.8%     | -5.70%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| NTPC     | Power                | 0.7%     | +17.09%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| NHPC     | Power                | 0.7%     | +30.37%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| ENGIND   | Infrastructure       | 0.7%     | +66.41%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| PETLNG   | Oil & Gas            | 0.6%     | -9.38%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| TATPOW   | Power                | 0.5%     | +28.24%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
-| GUJPPL   | Infrastructure       | 0.5%     | +90.63%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| SEQSCI   | Pharma               | 0.4%     | +99.15%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| DRREDD   | Pharma               | 1.2%     | +1.08%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| SJVLIM   | Power                | 0.8%     | -28.94%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| HINPET   | Oil & Gas            | 0.8%     | -5.81%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| NTPC     | Power                | 0.7%     | +17.81%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| NHPC     | Power                | 0.7%     | +30.52%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| ENGIND   | Infrastructure       | 0.7%     | +66.18%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| PETLNG   | Oil & Gas            | 0.6%     | -9.19%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| TATPOW   | Power                | 0.5%     | +28.18%        | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| GUJPPL   | Infrastructure       | 0.5%     | +91.23%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| SEQSCI   | Pharma               | 0.4%     | +99.27%        | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
 | GUJGA    | Oil & Gas            | 0.4%     | -14.32%        | ⚪ NO DATA       | Could not evaluate (no data) — verify manually. |
-| MIR150   | Other ETFs/Misc      | 0.3%     | +1.19%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| HDF250   | Other ETFs/Misc      | 0.2%     | +8.44%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
-| NIPNIT   | IT                   | 0.2%     | -3.95%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
+| MIR150   | Other ETFs/Misc      | 0.3%     | +1.05%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| HDF250   | Other ETFs/Misc      | 0.2%     | +8.57%         | 🟡 HOLD / REVIEW | ROE unavailable — verify fundamentals manually. |
+| NIPNIT   | IT                   | 0.2%     | -4.07%         | 🔴 STRG SELL     | Below 200 DMA structural breakdown.             |
 
 ### Sector Concentration Metrics
 * **Oil & Gas**: 20.3%
