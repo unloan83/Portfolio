@@ -68,10 +68,12 @@ jobs:
       continue-on-error: true
       run: |
         if [ -n "${{ secrets.TELEGRAM_TOKEN }}" ] && [ -n "${{ secrets.TELEGRAM_TO }}" ]; then
-          curl -sS --fail -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+          curl -sS -o /tmp/tg_resp.json -w "HTTP_STATUS:%{http_code}\n" -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
             -d "parse_mode=HTML" \
             --data-urlencode "text=${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
+          cat /tmp/tg_resp.json
+          echo ""
         else
           echo "[info] Telegram secrets missing in GitHub Repository settings. Skipped workflow curl notification."
         fi
