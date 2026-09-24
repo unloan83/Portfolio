@@ -68,14 +68,13 @@ jobs:
       continue-on-error: true
       run: |
         RAW_TOKEN="${{ secrets.TELEGRAM_TOKEN }}"
-        echo "=== TOKEN DIAGNOSTIC ==="
-        echo "Raw token length: ${#RAW_TOKEN}"
-        echo "First 4 chars: $(echo -n "$RAW_TOKEN" | head -c 4)"
-        echo "Contains colon: $(echo -n "$RAW_TOKEN" | grep -q ':' && echo YES || echo NO)"
-        echo "Hex prefix (first 10 bytes): $(echo -n "$RAW_TOKEN" | xxd -p 2>/dev/null | head -c 20 || echo -n "$RAW_TOKEN" | od -An -tx1 | head -c 20)"
-        
-        CLEAN_TOKEN=$(echo "$RAW_TOKEN" | sed 's/^bot//i' | tr -d '\r\n ')
         CLEAN_CHAT_ID=$(echo "${{ secrets.TELEGRAM_TO }}" | tr -d '\r\n ')
+        
+        # Ensure token has numeric bot ID prefix if missing
+        if [[ ! "$RAW_TOKEN" =~ ^[0-9]+: ]]; then
+          RAW_TOKEN="8526197794:$RAW_TOKEN"
+        fi
+        CLEAN_TOKEN=$(echo "$RAW_TOKEN" | sed 's/^bot//i' | tr -d '\r\n ')
         
         if [ -n "$CLEAN_TOKEN" ] && [ -n "$CLEAN_CHAT_ID" ]; then
           curl -sS --fail -X POST "https://api.telegram.org/bot${CLEAN_TOKEN}/sendMessage" \
