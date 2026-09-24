@@ -68,7 +68,11 @@ jobs:
       continue-on-error: true
       run: |
         if [ -n "${{ secrets.TELEGRAM_TOKEN }}" ] && [ -n "${{ secrets.TELEGRAM_TO }}" ]; then
-          curl -sS -o /tmp/tg_resp.json -w "HTTP_STATUS:%{http_code}\n" -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+          echo "=== Testing TELEGRAM_TOKEN getMe in GitHub Actions ==="
+          curl -sS -o /tmp/tg_getme.json -w "GETME_HTTP_STATUS:%{http_code}\n" "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/getMe"
+          cat /tmp/tg_getme.json
+          echo ""
+          curl -sS -o /tmp/tg_resp.json -w "SENDMESSAGE_HTTP_STATUS:%{http_code}\n" -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TELEGRAM_TO }}" \
             -d "parse_mode=HTML" \
             --data-urlencode "text=${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
