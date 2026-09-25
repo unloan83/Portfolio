@@ -1616,3 +1616,36 @@ Analysis_Date,Stock_Symbol,Price_At_Signal,Model_Signal,Trigger_Reason,run_times
 2026-09-24,RELIND,1219.2,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-24 19:57:43 IST,1219.2,1290.86,1364.93,,15.37,Oil & Gas,BEARISH
 2026-09-24,GUJPPL,163.27,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-24 19:57:43 IST,163.27,155.11,158.15,,0.48,Infrastructure,NEUTRAL
 2026-09-24,IDECEL,14.12,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-24 19:57:43 IST,14.12,13.95,12.22,,3.21,Telecom,BULLISH
+2026-09-25,ASHLEY,159.13,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,159.13,167.04,170.02,,2.52,Auto,BEARISH
+2026-09-25,TATCAP,340.4,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,340.4,360.31,340.29,,2.15,Financial Services,NEUTRAL
+2026-09-25,FEDBAN,330.7,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,330.7,348.91,302.89,,2.12,Banking,NEUTRAL
+2026-09-25,HDFBAN,738.15,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,738.15,727.97,808.54,0.1384,14.81,Banking,BEARISH
+2026-09-25,LGELEC,1718.5,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,1718.5,1620.52,1547.3,,3.03,Consumer Electronics,BULLISH
+2026-09-25,HDF250,183.48,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,183.48,183.81,169.94,,0.24,Other ETFs/Misc,NEUTRAL
+2026-09-25,ICIGOL,128.93,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,128.93,128.43,127.17,,5.09,Other ETFs/Misc,BULLISH
+2026-09-25,ICINIF,,⚪ NO DATA,Could not evaluate (no data) — verify manually.,2026-09-25 14:37:02 IST,,,,,1.47,Other ETFs/Misc,NO_DATA
+2026-09-25,ICIPSE,228.26,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,228.26,227.92,240.33,,7.69,Other ETFs/Misc,BEARISH
+2026-09-25,NIPNIT,31.28,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,31.28,33.47,34.79,,0.18,IT,BEARISH
+2026-09-25,BHAELE,391.95,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,391.95,402.31,417.42,,5.03,Defense,BEARISH
+2026-09-25,TATGLO,984.0,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,984.0,1048.85,1111.66,,5.41,Consumption,BEARISH
+2026-09-25,JIOFIN,227.1,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,227.1,240.85,249.55,,1.94,Financial Services,BEARISH
+2026-09-25,WIPRO,164.15,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,164.15,176.73,199.56,0.1613,6.88,IT,BEARISH
+2026-09-25,ENGIND,317.4,🟡 HOLD / PEAK,Overextended >25% above 50 DMA.,2026-09-25 14:37:02 IST,317.4,251.66,223.48,,0.74,Infrastructure,BULLISH
+2026-09-25,LIC,408.9,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,408.9,411.9,407.29,,5.04,Insurance,NEUTRAL
+2026-09-25,MIR150,23.0,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,23.0,23.64,22.68,,0.25,Other ETFs/Misc,NEUTRAL
+2026-09-25,DRREDD,1205.3,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,1205.3,1173.64,1242.63,0.0884,1.2,Pharma,BEARISH
+2026-09-25,SEQSCI,245.15,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,245.15,260.05,232.22,,0.4,Pharma,NEUTRAL
+2026-09-25,JSWENE,506.8,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,506.8,541.82,523.91,,4.92,Power,BEARISH
+2026-09-25,NHPC,76.16,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,76.16,77.1,77.38,,0.66,Power,BEARISH
+2026-09-25,NTPC,326.4,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,326.4,334.87,354.52,,0.71,Power,BEARISH
+2026-09-25,NTPGRE,93.4,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,93.4,90.98,95.34,,2.19,Power,BEARISH
+2026-09-25,SJVLIM,61.77,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,61.77,66.12,71.3,,0.77,Power,BEARISH
+2026-09-25,TATPOW,367.5,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,367.5,371.7,385.45,,0.52,Power,BEARISH
+2026-09-25,GAIL,172.67,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,172.67,173.57,164.81,,1.54,Oil & Gas,NEUTRAL
+2026-09-25,GUJGA,,⚪ NO DATA,Could not evaluate (no data) — verify manually.,2026-09-25 14:37:02 IST,,,,,0.43,Oil & Gas,NO_DATA
+2026-09-25,HINPET,351.4,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,351.4,365.36,381.86,,0.84,Oil & Gas,BEARISH
+2026-09-25,ONGC,235.7,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,235.7,237.5,254.79,,1.58,Oil & Gas,BEARISH
+2026-09-25,PETLNG,285.6,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,285.6,284.52,279.21,,0.58,Oil & Gas,BULLISH
+2026-09-25,RELIND,1226.0,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-25 14:37:02 IST,1226.0,1288.83,1363.41,,15.37,Oil & Gas,BEARISH
+2026-09-25,GUJPPL,161.6,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,161.6,155.41,158.05,,0.48,Infrastructure,NEUTRAL
+2026-09-25,IDECEL,14.36,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-25 14:37:02 IST,14.36,13.97,12.24,,3.21,Telecom,BULLISH
