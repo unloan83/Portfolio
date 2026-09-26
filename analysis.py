@@ -203,7 +203,8 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         return_emoji = "📈" if total_return >= 0 else "📉"
 
         t_info = thesis_dict.get(broker_symbol, {})
-        t_text = t_info.get("thesis", "NOT YET SET")
+        raw_thesis = t_info.get("thesis")
+        t_text = str(raw_thesis).strip() if (raw_thesis is not None and pd.notna(raw_thesis) and str(raw_thesis).strip()) else "NOT YET SET"
         t_conv = t_info.get("conviction")
         t_inv = t_info.get("invalidation_price")
 

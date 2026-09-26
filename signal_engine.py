@@ -80,10 +80,10 @@ def evaluate_signal(
             technical_trend = "NEUTRAL"
 
     # Evaluate Thesis Status
+    thesis_str = str(thesis_text).strip().upper() if thesis_text is not None else ""
     thesis_is_set = (
-        thesis_text is not None
-        and str(thesis_text).strip() != ""
-        and str(thesis_text).strip() not in ("NOT YET SET", "NOT SET")
+        thesis_str != ""
+        and thesis_str not in ("NOT YET SET", "NOT SET", "NAN", "NONE", "NULL", "UNDEFINED")
     )
     eval_price = current_price if current_price is not None else None
 

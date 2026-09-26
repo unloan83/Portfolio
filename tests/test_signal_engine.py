@@ -154,3 +154,46 @@ def test_signal_bearish_negative_return():
     assert res.explanation == "breakdown + thesis stress"
     assert res.recommended_action == "Hold"
 
+
+def test_signal_thesis_nan_and_unset_handling():
+    import numpy as np
+    for unset_val in ["NOT YET SET", "not set", "nan", "None", "NULL", "undefined", np.nan]:
+        res = evaluate_signal(
+            current_price=110.0,
+            dma_50=105.0,
+            dma_200=100.0,
+            roe=0.15,
+            thesis_text=unset_val,
+        )
+        assert res.signal == "⚠️ NO THESIS"
+        assert res.thesis_status == "NOT SET"
+
+
+def test_signal_thesis_intact_and_invalidated_matrix():
+    # Intact thesis with high conviction
+    res_intact = evaluate_signal(
+        current_price=110.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        roe=0.15,
+        thesis_text="Solid compounder",
+        conviction=5.0,
+        invalidation_price=80.0,
+    )
+    assert res_intact.thesis_status == "INTACT"
+    assert res_intact.signal == "🟢 ACCUMULATE"
+
+    # Invalidated thesis with low conviction -> Exit
+    res_inv = evaluate_signal(
+        current_price=75.0,
+        dma_50=95.0,
+        dma_200=100.0,
+        thesis_text="Turnaround play",
+        conviction=2.0,
+        invalidation_price=80.0,
+    )
+    assert res_inv.thesis_status == "INVALIDATED"
+    assert res_inv.signal == "🔴 STRG SELL"
+    assert res_inv.recommended_action == "Exit"
+
+
