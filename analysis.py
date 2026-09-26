@@ -102,11 +102,43 @@ def send_telegram_notification(summary_msg: str) -> bool:
 def run_weekly_analysis(notify_fn=send_telegram_notification):
     portfolio_file = "portfolio.csv"
     tracking_file = "re-engineering.csv"
+    thesis_file = "thesis.csv"
+
     if not os.path.exists(portfolio_file):
         return
 
     df = pd.read_csv(portfolio_file)
     df.columns = df.columns.str.strip()
+
+    # --- LOAD THESIS DATA ---
+    thesis_dict = {}
+    if os.path.exists(thesis_file):
+        try:
+            thesis_df = pd.read_csv(thesis_file)
+            thesis_df.columns = thesis_df.columns.str.strip()
+            for _, t_row in thesis_df.iterrows():
+                sym = str(t_row.get("Stock Symbol", "")).strip()
+                if sym:
+                    thesis_dict[sym] = {
+                        "thesis": str(t_row.get("Thesis", "NOT YET SET")).strip(),
+                        "conviction": t_row.get("Conviction"),
+                        "invalidation_price": t_row.get("Invalidation_Price"),
+                    }
+        except Exception as exc:
+            print(f"[warn] Error reading thesis file {thesis_file}: {exc}")
+
+    # --- LOAD HISTORICAL SIGNALS FOR EVENT-DRIVEN ALERTING ---
+    last_signals = {}
+    if os.path.exists(tracking_file):
+        try:
+            hist_df = pd.read_csv(tracking_file)
+            if not hist_df.empty and "Stock_Symbol" in hist_df.columns and "Model_Signal" in hist_df.columns:
+                last_signals = hist_df.groupby("Stock_Symbol")["Model_Signal"].last().to_dict()
+        except Exception as exc:
+            print(f"[warn] Error reading historical signals from {tracking_file}: {exc}")
+
+    run_type = os.environ.get("RUN_TYPE", "incremental").strip().lower()
+    is_full_review = (run_type == "full")
 
     # --- AGENT 1: RISK & ALLOCATION PRE-COMPUTATION ---
     df['Sector'] = df['Stock Symbol'].str.strip().map(SECTOR_MAP).fillna('Other ETFs/Misc')
@@ -170,6 +202,25 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         total_return = ((display_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
+        t_info = thesis_dict.get(broker_symbol, {})
+        t_text = t_info.get("thesis", "NOT YET SET")
+        t_conv = t_info.get("conviction")
+        t_inv = t_info.get("invalidation_price")
+
+        conviction_val = None
+        if t_conv is not None and not pd.isna(t_conv) and str(t_conv).strip() != "":
+            try:
+                conviction_val = float(t_conv)
+            except ValueError:
+                conviction_val = None
+
+        inv_price_val = None
+        if t_inv is not None and not pd.isna(t_inv) and str(t_inv).strip() != "":
+            try:
+                inv_price_val = float(t_inv)
+            except ValueError:
+                inv_price_val = None
+
         eval_res = evaluate_signal(
             current_price=current_price,
             dma_50=dma_50,
@@ -178,10 +229,17 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             stock_sector=stock_sector,
             sector_risk_exposure=sector_risk_exposure,
             technical_trend_override=technical_trend_override,
+            total_return=total_return,
+            thesis_text=t_text,
+            conviction=conviction_val,
+            invalidation_price=inv_price_val,
             config=RISK_CONFIG,
         )
         signal = eval_res.signal
+        recommended_action = eval_res.recommended_action
         explanation = eval_res.explanation
+        thesis_status = eval_res.thesis_status
+        conviction_disp = str(int(eval_res.conviction)) if eval_res.conviction is not None else ""
         technical_trend = eval_res.technical_trend
 
         # Save to Main Display DataFrame
@@ -190,8 +248,11 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             "Sector": stock_sector,
             "Weight": f"{stock_weight:.1f}%",
             "Total Return": f"{total_return:+.2f}%",
-            "Action Signal": signal,
-            "Reasoning Matrix": explanation
+            "Signal": signal,
+            "Recommended Action": recommended_action,
+            "Reasoning": explanation,
+            "Thesis Status": thesis_status,
+            "Conviction": conviction_disp
         })
 
         # --- LOG TO HISTORY TRACKING ARRAY ---
@@ -219,10 +280,24 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             "roe": log_roe,
             "portfolio_weight_pct": round(stock_weight, 2),
             "sector": stock_sector,
-            "technical_trend": technical_trend
+            "technical_trend": technical_trend,
+            "Recommended_Action": recommended_action,
+            "Thesis_Status": thesis_status,
+            "Conviction": conviction_disp
         })
 
-        telegram_lines.append(f"{signal} | {broker_symbol} ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}%")
+        # --- EVENT-DRIVEN ALERT QUALIFICATION ---
+        last_sig = last_signals.get(broker_symbol)
+        signal_changed = (last_sig != signal)
+        crossed_into_alert = (
+            signal in ("⚠️ NO THESIS", "🔴 STRG SELL")
+            and last_sig not in ("⚠️ NO THESIS", "🔴 STRG SELL")
+        )
+
+        if is_full_review or signal_changed or crossed_into_alert:
+            telegram_lines.append(
+                f"{signal} | {broker_symbol} ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}% | Action: {recommended_action}"
+            )
 
     # --- COMPILING THE HISTORICAL TIME SERIES RECORD ---
     new_log_df = pd.DataFrame(tracking_rows)
@@ -249,17 +324,26 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     with open("README.md", "w") as f:
         f.write(markdown_output)
 
-    summary_msg = f"🛡️ *Multi-Agent Portfolio Matrix ({date_str})*\n\n" + "\n".join(telegram_lines[:18])
-    if "GITHUB_OUTPUT" in os.environ:
-        with open(os.environ["GITHUB_OUTPUT"], "a") as env_file:
-            env_file.write("TELEGRAM_SUMMARY<<EOF\n")
-            env_file.write(summary_msg + "\n")
-            env_file.write("EOF\n")
+    # Dispatch Telegram Notification Only If Qualifying Changes Exist
+    if telegram_lines:
+        header = f"🛡️ *Multi-Agent Portfolio Matrix ({date_str})*"
+        if is_full_review:
+            header += " [FULL REVIEW]"
+        summary_msg = f"{header}\n\n" + "\n".join(telegram_lines[:18])
+        if "GITHUB_OUTPUT" in os.environ:
+            with open(os.environ["GITHUB_OUTPUT"], "a") as env_file:
+                env_file.write("TELEGRAM_SUMMARY<<EOF\n")
+                env_file.write(summary_msg + "\n")
+                env_file.write("EOF\n")
 
-    # Send direct Telegram notification if credentials are provided or present in credentials folder
-    summary_msg_html = f"<b>🛡️ Multi-Agent Portfolio Matrix ({date_str})</b>\n\n" + "\n".join(telegram_lines[:18])
-    if notify_fn is not None:
-        notify_fn(summary_msg_html)
+        summary_msg_html = f"<b>{header}</b>\n\n" + "\n".join(telegram_lines[:18])
+        if notify_fn is not None:
+            notify_fn(summary_msg_html)
+    else:
+        print("[info] Incremental run with 0 qualifying signal changes. Telegram alert suppressed.")
+        if "GITHUB_OUTPUT" in os.environ:
+            with open(os.environ["GITHUB_OUTPUT"], "a") as env_file:
+                env_file.write("TELEGRAM_SUMMARY<<EOF\nEOF\n")
 
 if __name__ == "__main__":
     run_weekly_analysis()

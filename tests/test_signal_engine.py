@@ -99,13 +99,58 @@ def test_signal_hold_risk_low_roe():
     assert "Weak operational efficiency" in res.explanation
 
 
-def test_signal_no_data():
-    # No data / fetch error
+def test_signal_no_thesis():
     res = evaluate_signal(
-        current_price=None,
-        dma_50=None,
-        dma_200=None,
-        technical_trend_override="FETCH_ERROR",
+        current_price=110.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        roe=0.15,
+        thesis_text="NOT YET SET",
     )
-    assert res.signal == "⚪ NO DATA"
-    assert res.technical_trend == "FETCH_ERROR"
+    assert res.signal == "⚠️ NO THESIS"
+    assert res.thesis_status == "NOT SET"
+    assert res.recommended_action == "Hold"
+
+
+def test_signal_thesis_invalidated():
+    res = evaluate_signal(
+        current_price=80.0,
+        dma_50=95.0,
+        dma_200=100.0,
+        thesis_text="Strong retail growth",
+        conviction=2.0,
+        invalidation_price=85.0,
+    )
+    assert res.signal == "🔴 STRG SELL"
+    assert res.thesis_status == "INVALIDATED"
+    assert res.explanation == "thesis invalidated"
+    assert res.recommended_action == "Exit"
+
+
+def test_signal_bearish_pullback_strong_return():
+    res = evaluate_signal(
+        current_price=90.0,
+        dma_50=95.0,
+        dma_200=100.0,
+        total_return=30.0,
+        thesis_text="Long term compounder",
+        conviction=5.0,
+    )
+    assert res.signal == "🟡 HOLD / TRIM WATCH"
+    assert res.explanation == "pullback within thesis, not a breakdown"
+    assert res.recommended_action == "Add on weakness (small)"
+
+
+def test_signal_bearish_negative_return():
+    res = evaluate_signal(
+        current_price=90.0,
+        dma_50=95.0,
+        dma_200=100.0,
+        total_return=-10.0,
+        thesis_text="Long term compounder",
+        conviction=3.0,
+    )
+    assert res.signal == "🔴 STRG SELL"
+    assert res.explanation == "breakdown + thesis stress"
+    assert res.recommended_action == "Hold"
+

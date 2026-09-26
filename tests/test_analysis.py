@@ -92,7 +92,7 @@ def test_no_data_and_sector_cap_are_explicit(tmp_path, monkeypatch):
     ]
     assert list(tracking.columns[:5]) == expected_original_cols
 
-    # Verify all 13 columns are in exact expected schema
+    # Verify all 16 columns are in exact expected schema
     expected_full_cols = expected_original_cols + [
         "run_timestamp_ist",
         "current_price",
@@ -102,12 +102,15 @@ def test_no_data_and_sector_cap_are_explicit(tmp_path, monkeypatch):
         "portfolio_weight_pct",
         "sector",
         "technical_trend",
+        "Recommended_Action",
+        "Thesis_Status",
+        "Conviction",
     ]
     assert list(tracking.columns) == expected_full_cols
 
     # 2. Verify successful signal writes all new columns populated
     bull_row = tracking[tracking["Stock_Symbol"] == "BULL"].iloc[0]
-    assert bull_row["Model_Signal"] == "⚠️ SECTOR CAP"
+    assert bull_row["Model_Signal"] == "⚠️ NO THESIS"
     assert "IST" in str(bull_row["run_timestamp_ist"])
     assert float(bull_row["current_price"]) == 319.0
     assert pd.notna(bull_row["dma_50"])
@@ -139,4 +142,46 @@ def test_no_data_and_sector_cap_are_explicit(tmp_path, monkeypatch):
     assert unlist_row["Model_Signal"] == "⚪ NO DATA"
     assert unlist_row["technical_trend"] == "NO_TICKER"
     assert pd.isna(unlist_row["current_price"])
+
+
+def test_consecutive_run_suppresses_telegram_notification(tmp_path, monkeypatch):
+    portfolio = pd.DataFrame(
+        [
+            {
+                "Stock Symbol": "BULL",
+                "Company Name": "Bullish Holding",
+                "Qty": 10,
+                "Average Cost Price": 100,
+                "Current Market Price": 200,
+            }
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    thesis = pd.DataFrame(
+        [
+            {
+                "Stock Symbol": "BULL",
+                "Thesis": "Growth thesis intact",
+                "Conviction": 5,
+                "Invalidation_Price": 50,
+                "Last_Updated": "2026-09-25",
+            }
+        ]
+    )
+    thesis.to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "BULL", "BULL.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BULL", "Test Sector")
+    monkeypatch.setattr(analysis.yf, "Ticker", FakeTicker)
+
+    # First run should send notification
+    mock_notifier1 = MagicMock()
+    analysis.run_weekly_analysis(notify_fn=mock_notifier1)
+    mock_notifier1.assert_called_once()
+
+    # Second run without changes in incremental mode should suppress notification
+    mock_notifier2 = MagicMock()
+    analysis.run_weekly_analysis(notify_fn=mock_notifier2)
+    mock_notifier2.assert_not_called()
+
 

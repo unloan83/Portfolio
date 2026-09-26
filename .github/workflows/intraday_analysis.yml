@@ -6,7 +6,17 @@ on:
     - cron: '50 3 * * 1-5'   # ~9:20 IST (03:50 UTC), weekdays
     - cron: '50 6 * * 1-5'   # ~12:20 IST (06:50 UTC), weekdays
     - cron: '45 9 * * 1-5'   # ~15:15 IST (09:45 UTC), weekdays
+    - cron: '0 12 * * 5'     # Weekly Friday review
   workflow_dispatch: # Allows manual trigger via GitHub UI / API
+    inputs:
+      run_type:
+        description: 'Run type (incremental or full)'
+        required: false
+        default: 'incremental'
+        type: choice
+        options:
+          - incremental
+          - full
 
 permissions:
   contents: write
@@ -39,6 +49,7 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_TO }}
+        RUN_TYPE: ${{ github.event.inputs.run_type || (github.event_name == 'schedule' && github.event.schedule == '0 12 * * 5' && 'full' || 'incremental') }}
       run: python analysis.py
 
     - name: Commit and Push Report
@@ -46,8 +57,8 @@ jobs:
       run: |
         git config --global user.name "Portfolio Automation Bot"
         git config --global user.email "bot@github.com"
-        git add reports/*.md README.md re-engineering.csv || true
-        git diff-index --quiet HEAD || git commit -m "Automated Weekly Report Update: $(date +'%Y-%m-%d')"
+        git add reports/*.md README.md re-engineering.csv trades.csv thesis.csv || true
+        git diff-index --quiet HEAD || git commit -m "Automated Portfolio Report Update: $(date +'%Y-%m-%d')"
         git push
 
     - name: Verify Push Synchronized on Origin
@@ -76,14 +87,15 @@ jobs:
           RAW_TOKEN="8526197794:$RAW_TOKEN"
         fi
         CLEAN_TOKEN=$(echo "$RAW_TOKEN" | sed 's/^bot//i' | tr -d '\r\n ')
+        SUMMARY_TXT="${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
         
-        if [ -n "$CLEAN_TOKEN" ] && [ -n "$CLEAN_CHAT_ID" ]; then
+        if [ -n "$CLEAN_TOKEN" ] && [ -n "$CLEAN_CHAT_ID" ] && [ -n "$SUMMARY_TXT" ]; then
           curl -sS --fail --connect-timeout 10 --max-time 20 -X POST "https://api.telegram.org/bot${CLEAN_TOKEN}/sendMessage" \
             -d "chat_id=${CLEAN_CHAT_ID}" \
             -d "parse_mode=HTML" \
-            --data-urlencode "text=${{ steps.run_script.outputs.TELEGRAM_SUMMARY }}"
+            --data-urlencode "text=${SUMMARY_TXT}"
         else
-          echo "[info] Telegram secrets missing in GitHub Repository settings. Skipped workflow curl notification."
+          echo "[info] Notification skipped or Telegram credentials missing."
         fi
 
     - name: Send Alert to Telegram on Failure
