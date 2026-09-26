@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import pandas as pd
@@ -11,7 +12,7 @@ from signal_engine import evaluate_signal
 TICKER_MAP = {
     'ASHLEY': 'ASHOKLEY.NS', 'FEDBAN': 'FEDERALBNK.NS', 'HDFBAN': 'HDFCBANK.NS',
     'HDF250': 'HDFCSML250.NS', 'ICIGOL': 'GOLDIETF.NS', 'ICINIF': 'NIFTYIETF.NS',
-    'ICIPSE': 'SILVERIETF.NS', 'NIPNIT': 'ITBEES.NS', 'MIR150': 'MIDCAPETF.NS',
+    'ICIPSE': 'SILVERIETF.NS', 'NIPNIT': 'ITBEES.NS', 'MIR150': 'MIDCAPETF.NS', 'KOTAKBKETF': 'BANKNIFTY1.NS',
     'BHAELE': 'BEL.NS', 'TATGLO': 'TATACONSUM.NS', 'JIOFIN': 'JIOFIN.NS',
     'WIPRO': 'WIPRO.NS', 'ENGIND': 'ENGINERSIN.NS', 'LIC': 'LICI.NS',
     'DRREDD': 'DRREDDY.NS', 'SEQSCI': 'VIYASH.NS', 'JSWENE': 'JSWENERGY.NS',
@@ -25,7 +26,7 @@ TICKER_MAP = {
 # Explicit sector definitions to track concentration rules
 SECTOR_MAP = {
     'ASHLEY': 'Auto', 'TATGLO': 'Consumption', 'LGELEC': 'Consumer Electronics',
-    'FEDBAN': 'Banking', 'HDFBAN': 'Banking', 'JIOFIN': 'Financial Services', 'TATCAP': 'Financial Services',
+    'FEDBAN': 'Banking', 'HDFBAN': 'Banking', 'KOTAKBKETF': 'Banking', 'JIOFIN': 'Financial Services', 'TATCAP': 'Financial Services',
     'WIPRO': 'IT', 'NIPNIT': 'IT',
     'BHAELE': 'Defense', 'ENGIND': 'Infrastructure', 'GUJPPL': 'Infrastructure',
     'LIC': 'Insurance', 'DRREDD': 'Pharma', 'SEQSCI': 'Pharma',
@@ -210,10 +211,16 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
 
         conviction_val = None
         if t_conv is not None and not pd.isna(t_conv) and str(t_conv).strip() != "":
+            s_conv = str(t_conv).strip()
             try:
-                conviction_val = float(t_conv)
+                conviction_val = float(s_conv)
             except ValueError:
-                conviction_val = None
+                match = re.search(r"(\d+(?:\.\d+)?)", s_conv)
+                if match:
+                    try:
+                        conviction_val = float(match.group(1))
+                    except ValueError:
+                        conviction_val = None
 
         inv_price_val = None
         if t_inv is not None and not pd.isna(t_inv) and str(t_inv).strip() != "":
