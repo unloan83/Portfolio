@@ -24,7 +24,7 @@ PARTIAL_HISTORY_SYMBOLS = {
 }
 
 # Known exited positions or external trades present in trades.csv but not held in portfolio.csv
-KNOWN_EXITED_OR_EXTERNAL_SYMBOLS = {'AWL', 'KOTAKBKETF'}
+KNOWN_EXITED_OR_EXTERNAL_SYMBOLS = {'AWL'}
 
 
 def calculate_trades_positions(trades_df: pd.DataFrame) -> dict:
