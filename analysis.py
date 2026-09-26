@@ -182,10 +182,11 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
 
                 # Momentum Agent
                 data = ticker_obj.history(period="1y")
-                if not data.empty and len(data) >= 200:
-                    current_price = float(data["Close"].iloc[-1])
-                    dma_50 = float(data["Close"].rolling(window=50).mean().iloc[-1])
-                    dma_200 = float(data["Close"].rolling(window=200).mean().iloc[-1])
+                clean_close = data["Close"].dropna() if not data.empty and "Close" in data.columns else pd.Series(dtype=float)
+                if not clean_close.empty and len(clean_close) >= 200:
+                    current_price = float(clean_close.iloc[-1])
+                    dma_50 = float(clean_close.rolling(window=50).mean().iloc[-1])
+                    dma_200 = float(clean_close.rolling(window=200).mean().iloc[-1])
                 else:
                     technical_trend_override = "NO_DATA"
             except Exception as exc:
