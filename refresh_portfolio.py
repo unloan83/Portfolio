@@ -85,7 +85,7 @@ def calculate_trades_positions(trades_df: pd.DataFrame) -> dict:
 def refresh_row(row_dict: dict, calc_qty: float, calc_avg_cost: float) -> dict:
     """
     Refreshes a portfolio row dictionary based on calc_qty and calc_avg_cost from trades.csv.
-    Symbols in PARTIAL_HISTORY_SYMBOLS are never overwritten or reformatted, regardless of calc_qty.
+    Symbols in PARTIAL_HISTORY_SYMBOLS or symbols where calc_qty == existing_qty are returned untouched.
     """
     row = dict(row_dict)
     sym = str(row["Stock Symbol"]).strip()
@@ -94,22 +94,23 @@ def refresh_row(row_dict: dict, calc_qty: float, calc_avg_cost: float) -> dict:
         return row  # trades.csv known incomplete for this symbol — return original row completely untouched
 
     existing_qty = float(row["Qty"])
-    if calc_qty != existing_qty:
-        row["Qty"] = int(round(calc_qty))
-        row["Average Cost Price"] = round(calc_avg_cost, 2)
+    if calc_qty == existing_qty:
+        return row  # quantity matches existing portfolio quantity — return original row completely untouched
 
-    qty = float(row["Qty"])
-    avg_cost = float(row["Average Cost Price"])
-    cmp = float(row.get("Current Market Price", 0.0)) if pd.notna(row.get("Current Market Price")) else 0.0
+    new_qty = int(round(calc_qty))
+    new_avg_cost = round(calc_avg_cost, 2)
+    cmp = float(row.get("Current Market Price", 0.0)) if pd.notna(row.get("Current Market Price")) and str(row.get("Current Market Price")).strip() else 0.0
 
-    val_at_cost = round(qty * avg_cost, 2)
-    val_at_mkt = round(qty * cmp, 2)
+    val_at_cost = round(new_qty * new_avg_cost, 2)
+    val_at_mkt = round(new_qty * cmp, 2)
     unrealized_pnl = round(val_at_mkt - val_at_cost, 2)
     unrealized_pnl_pct = round((unrealized_pnl / val_at_cost) * 100, 2) if val_at_cost > 0 else 0.0
 
-    row["Value At Cost"] = val_at_cost
-    row["Value At Market Price"] = val_at_mkt
-    row["Unrealized Profit/Loss"] = unrealized_pnl
+    row["Qty"] = new_qty
+    row["Average Cost Price"] = f"{new_avg_cost:.2f}"
+    row["Value At Cost"] = f"{val_at_cost:.2f}"
+    row["Value At Market Price"] = f"{val_at_mkt:.2f}"
+    row["Unrealized Profit/Loss"] = f"{unrealized_pnl:.2f}"
     row["Unrealized Profit/Loss %"] = f"{unrealized_pnl_pct:.2f}" if unrealized_pnl_pct >= 0 else f"({abs(unrealized_pnl_pct):.2f})"
 
     return row
@@ -163,36 +164,21 @@ def refresh_portfolio(trades_path: str = TRADES_FILE, portfolio_path: str = PORT
         parts = [p.strip() for p in raw_parts]
         sym = parts[sym_idx]
 
-        if sym in PARTIAL_HISTORY_SYMBOLS or sym not in positions:
+        if sym not in positions:
             new_lines.append(line)
             continue
 
         pos = positions[sym]
-        calc_qty = pos["qty"]
-        calc_avg_cost = pos["avg_cost"]
-        existing_qty = float(parts[qty_idx])
+        row_dict = dict(zip(header_cols, parts))
+        updated = refresh_row(row_dict, calc_qty=pos["qty"], calc_avg_cost=pos["avg_cost"])
 
-        if calc_qty != existing_qty:
-            new_qty = int(round(calc_qty))
-            new_avg_cost = round(calc_avg_cost, 2)
-            cmp = float(parts[cmp_idx]) if (cmp_idx >= 0 and cmp_idx < len(parts) and parts[cmp_idx]) else 0.0
-
-            val_at_cost = round(new_qty * new_avg_cost, 2)
-            val_at_mkt = round(new_qty * cmp, 2)
-            unrealized_pnl = round(val_at_mkt - val_at_cost, 2)
-            unrealized_pnl_pct = round((unrealized_pnl / val_at_cost) * 100, 2) if val_at_cost > 0 else 0.0
-
-            parts[qty_idx] = str(new_qty)
-            parts[avg_idx] = f"{new_avg_cost:.2f}"
-            if cost_idx >= 0: parts[cost_idx] = f"{val_at_cost:.2f}"
-            if mkt_idx >= 0: parts[mkt_idx] = f"{val_at_mkt:.2f}"
-            if pnl_idx >= 0: parts[pnl_idx] = f"{unrealized_pnl:.2f}"
-            if pnl_pct_idx >= 0: parts[pnl_pct_idx] = f"{unrealized_pnl_pct:.2f}" if unrealized_pnl_pct >= 0 else f"({abs(unrealized_pnl_pct):.2f})"
-
-            trailing = ",\n" if line.endswith(",\n") or line.endswith(",\r\n") else ("\r\n" if line.endswith("\r\n") else "\n")
-            new_lines.append(",".join(parts[:len(header_cols)]) + trailing)
-        else:
+        if updated == row_dict:
+            # refresh_row meade no change (partial-history skip, or values matched) — keep original line/formatting
             new_lines.append(line)
+        else:
+            out_parts = [str(updated.get(col, parts[header_cols.index(col)] if col in header_cols else "")) for col in header_cols]
+            trailing = ",\n" if line.endswith(",\n") or line.endswith(",\r\n") else ("\r\n" if line.endswith("\r\n") else "\n")
+            new_lines.append(",".join(out_parts) + trailing)
 
     with open(portfolio_path, "w", newline="") as f:
         f.writelines(new_lines)

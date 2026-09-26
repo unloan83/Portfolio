@@ -101,3 +101,27 @@ def test_unclassified_symbol_raises_error(tmp_path):
 
     with pytest.raises(ValueError, match="Unclassified symbol"):
         refresh_portfolio(str(trades_file), str(port_file))
+
+
+def test_refresh_portfolio_never_overwrites_partial_history(tmp_path):
+    """Proves the production write path (refresh_portfolio), not just refresh_row,
+    skips partial-history symbols even when calc_qty inflates past existing_qty."""
+    port_file = tmp_path / "portfolio.csv"
+    trades_file = tmp_path / "trades.csv"
+
+    port_df = pd.DataFrame([{
+        "Stock Symbol": "ASHLEY", "Qty": 106, "Average Cost Price": 98.98,
+        "Current Market Price": 100.0,
+    }])
+    port_df.to_csv(port_file, index=False)
+
+    # deliberately construct trades.csv so calc_qty > existing_qty (the old bug trigger)
+    trades_df = pd.DataFrame([
+        {"Date": "2024-01-01", "Stock Symbol": "ASHLEY", "Action": "BUY", "Qty": 500, "Price": 50.0},
+    ])
+    trades_df.to_csv(trades_file, index=False)
+
+    refreshed = refresh_portfolio(str(trades_file), str(port_file))
+    assert refreshed.iloc[0]["Qty"] == 106
+    assert refreshed.iloc[0]["Average Cost Price"] == 98.98
+
