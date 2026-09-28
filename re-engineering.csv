@@ -1851,3 +1851,37 @@ Analysis_Date,Stock_Symbol,Price_At_Signal,Model_Signal,Trigger_Reason,run_times
 2026-09-26,RELIND,1226.0,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-26 15:57:21 IST,1226.0,1288.83,1363.41,,14.87,Oil & Gas,BEARISH,Hold,INTACT,5
 2026-09-26,GUJPPL,163.2,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-26 15:57:21 IST,163.2,155.44,158.06,,0.47,Infrastructure,NEUTRAL,Hold,INTACT,3
 2026-09-26,IDECEL,14.26,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-26 15:57:21 IST,14.26,13.96,12.24,,3.11,Telecom,BULLISH,Hold,INTACT,2
+2026-09-27,ASHLEY,159.08,🟡 HOLD / TRIM WATCH,"pullback within thesis, not a breakdown",2026-09-27 19:36:56 IST,159.08,167.04,170.02,,2.44,Auto,BEARISH,Add on weakness (small),INTACT,4
+2026-09-27,TATCAP,339.15,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-27 19:36:56 IST,339.15,360.29,340.29,,2.08,Financial Services,BEARISH,Hold,INTACT,4
+2026-09-27,FEDBAN,322.0,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,322.0,348.73,302.84,,2.05,Banking,NEUTRAL,Hold,INTACT,4
+2026-09-27,HDFBAN,735.6,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,735.6,727.92,808.53,0.1384,14.34,Banking,BEARISH,Hold,INTACT,5
+2026-09-27,LGELEC,1725.4,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,1725.4,1620.66,1547.34,,2.93,Consumer Electronics,BULLISH,Hold,INTACT,4
+2026-09-27,HDF250,183.33,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,183.33,183.85,170.04,,0.61,Other ETFs/Misc,NEUTRAL,Hold,INTACT,4
+2026-09-27,ICIGOL,129.03,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,129.03,128.43,127.17,,4.93,Other ETFs/Misc,BULLISH,Hold,INTACT,2
+2026-09-27,ICINIF,,⚪ NO DATA,Could not evaluate (no data) — verify manually.,2026-09-27 19:36:56 IST,,,,,3.39,Other ETFs/Misc,NO_DATA,Hold,INTACT,4
+2026-09-27,ICIPSE,228.35,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,228.35,228.15,240.57,,7.44,Other ETFs/Misc,BEARISH,Hold,INTACT,3
+2026-09-27,NIPNIT,31.3,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,31.3,33.45,34.74,,0.36,IT,BEARISH,Hold,INTACT,4
+2026-09-27,KOTAKBKETF,57.69,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,57.69,59.3,209.53,,0.26,Banking,BEARISH,Hold,INTACT,4
+2026-09-27,BHAELE,393.55,🟡 HOLD / TRIM WATCH,"pullback within thesis, not a breakdown",2026-09-27 19:36:56 IST,393.55,402.34,417.42,,4.87,Defense,BEARISH,Hold,INTACT,3
+2026-09-27,TATGLO,983.2,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-27 19:36:56 IST,983.2,1048.83,1111.65,,5.24,Consumption,BEARISH,Hold,INTACT,3
+2026-09-27,JIOFIN,227.0,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,227.0,240.85,249.55,,1.88,Financial Services,BEARISH,Hold,INTACT,3
+2026-09-27,WIPRO,164.02,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,164.02,176.72,199.56,0.1613,6.66,IT,BEARISH,Hold,INTACT,4
+2026-09-27,ENGIND,315.65,🟡 HOLD / PEAK,Overextended >25% above 50 DMA.,2026-09-27 19:36:56 IST,315.65,251.63,223.48,,0.72,Infrastructure,BULLISH,Hold,INTACT,3
+2026-09-27,LIC,409.05,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,409.05,411.9,407.29,,4.87,Insurance,NEUTRAL,Hold,INTACT,4
+2026-09-27,MIR150,22.96,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,22.96,23.64,22.68,,0.66,Other ETFs/Misc,NEUTRAL,Hold,INTACT,4
+2026-09-27,DRREDD,1201.0,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-27 19:36:56 IST,1201.0,1173.56,1242.61,0.0884,1.16,Pharma,BEARISH,Hold,INTACT,5
+2026-09-27,SEQSCI,244.35,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,244.35,260.03,232.22,,0.39,Pharma,NEUTRAL,Hold,INTACT,2
+2026-09-27,JSWENE,506.55,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,506.55,541.82,523.91,,4.76,Power,BEARISH,Hold,INTACT,3
+2026-09-27,NHPC,76.0,🟡 HOLD / TRIM WATCH,"pullback within thesis, not a breakdown",2026-09-27 19:36:56 IST,76.0,77.1,77.38,,0.64,Power,BEARISH,Hold,INTACT,3
+2026-09-27,NTPC,326.6,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-27 19:36:56 IST,326.6,334.87,354.52,,0.69,Power,BEARISH,Hold,INTACT,5
+2026-09-27,NTPGRE,93.47,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,93.47,90.98,95.34,,2.12,Power,BEARISH,Hold,INTACT,3
+2026-09-27,SJVLIM,61.76,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,61.76,66.12,71.3,,0.75,Power,BEARISH,Hold,INTACT,3
+2026-09-27,TATPOW,367.5,🟡 HOLD / TRIM WATCH,"pullback within thesis, not a breakdown",2026-09-27 19:36:56 IST,367.5,371.7,385.45,,0.5,Power,BEARISH,Add on weakness (small),INTACT,4
+2026-09-27,GAIL,172.7,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,172.7,173.57,164.81,,1.49,Oil & Gas,NEUTRAL,Hold,INTACT,4
+2026-09-27,GUJGA,236.02,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,236.02,253.11,336.33,,0.42,Oil & Gas,BEARISH,Hold,INTACT,3
+2026-09-27,HINPET,351.0,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,351.0,365.36,381.85,,0.82,Oil & Gas,BEARISH,Hold,INTACT,3
+2026-09-27,ONGC,235.86,🔴 STRG SELL,breakdown + thesis stress,2026-09-27 19:36:56 IST,235.86,237.5,254.79,,1.53,Oil & Gas,BEARISH,Hold,INTACT,4
+2026-09-27,PETLNG,286.5,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,286.5,284.53,279.21,,0.56,Oil & Gas,BULLISH,Hold,INTACT,4
+2026-09-27,RELIND,1226.0,🔴 STRG SELL,Below 200 DMA structural breakdown.,2026-09-27 19:36:56 IST,1226.0,1288.83,1363.41,,14.87,Oil & Gas,BEARISH,Hold,INTACT,5
+2026-09-27,GUJPPL,163.2,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,163.2,155.44,158.06,,0.47,Infrastructure,NEUTRAL,Hold,INTACT,3
+2026-09-27,IDECEL,14.26,🟡 HOLD / REVIEW,ROE unavailable — verify fundamentals manually.,2026-09-27 19:36:56 IST,14.26,13.96,12.24,,3.11,Telecom,BULLISH,Hold,INTACT,2
