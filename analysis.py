@@ -243,6 +243,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             thesis_text=t_text,
             conviction=conviction_val,
             invalidation_price=inv_price_val,
+            stock_weight=stock_weight,
             config=RISK_CONFIG,
         )
         signal = eval_res.signal
