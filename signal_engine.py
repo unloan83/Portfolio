@@ -218,15 +218,16 @@ def evaluate_signal(
         # Default HOLD (including BEARISH pullback with negative return when thesis is INTACT and conviction >= 4)
         decision = "HOLD"
 
-    # 2. Horizon and Rationale Construction (Harmonized with Decision)
+    # 2. Horizon and Rationale Construction (Harmonized with Decision & Dynamic Variables)
     if data_status == "NO DATA":
         horizon_short_term = "NO DATA — Fresh price history unavailable"
         horizon_long_term = "UNVERIFIED — Technical layer missing"
-        rationale = explanation
+        rationale = f"Missing data: Technical price history unavailable ({technical_trend.replace('_', ' ').lower()}); evaluation incomplete."
     elif data_status == "NO THESIS":
-        horizon_short_term = f"{technical_trend} — Price evaluation complete"
+        cp_str = f"₹{current_price:.2f}" if current_price is not None else "N/A"
+        horizon_short_term = f"{technical_trend} — Price {cp_str} evaluation complete"
         horizon_long_term = "NO THESIS — Thesis not set for symbol"
-        rationale = explanation
+        rationale = "Missing thesis: Long-term investment thesis and invalidation price not defined in thesis.csv."
     else:
         cp_str = f"₹{current_price:.2f}" if current_price is not None else "N/A"
         d50_str = f"₹{dma_50:.2f}" if dma_50 is not None else "N/A"
@@ -239,26 +240,38 @@ def evaluate_signal(
 
         if thesis_status == "INVALIDATED":
             horizon_long_term = f"INVALIDATED — Price {cp_str} breached invalidation level {inv_str}"
-            rationale = f"Price {cp_str} breached invalidation level {inv_str}; thesis invalidated."
+            rationale = f"Thesis invalidated: Price {cp_str} <= invalidation price {inv_str}."
         elif decision == "SELL":
             horizon_long_term = f"BROKEN — 200 DMA breakdown with negative return ({ret_str}) and conviction ({conv_str}) < 4"
-            rationale = f"Price {cp_str} breached 200 DMA ({d200_str}) with return {ret_str}; conviction ({conv_str}) insufficient to hold breakdown."
-        elif decision == "HOLD" and technical_trend == "BEARISH" and total_return is not None and total_return < 0.0:
-            horizon_long_term = f"INTACT — High conviction ({conv_str}) thesis intact above invalidation ({inv_str}); drawdown monitored"
-            rationale = f"Price {cp_str} below 200 DMA ({d200_str}) with return {ret_str}, but high conviction ({conv_str}) thesis remains intact above invalidation ({inv_str})."
+            rationale = f"Structural breakdown: Price {cp_str} < 200 DMA ({d200_str}) with return {ret_str}; conviction ({conv_str}) < 4 or thesis {thesis_status} insufficient to hold breakdown."
         elif decision == "TRIM":
             horizon_long_term = f"INTACT — High conviction ({conv_str}) thesis intact; risk limits require position/sector trimming"
-            rationale = f"Position weight ({stock_weight:.1f}%) or sector risk ({sector_risk_exposure:.1f}%) exceeds cap; trim for risk control."
+            if is_overextended:
+                overextension_pct = config.overextension_multiple - 1.0
+                rationale = f"Overextended: Price {cp_str} > 50 DMA ({d50_str}) by >{overextension_pct:.0%}; position trimmed for peak profit lock."
+            elif stock_weight > config.max_position_pct:
+                rationale = f"Position cap breach: Weight {stock_weight:.1f}% exceeds max position limit ({config.max_position_pct:.1f}%); trim required."
+            elif sector_risk_exposure > config.max_sector_pct:
+                rationale = f"Sector cap breach: {stock_sector} sector exposure ({sector_risk_exposure:.1f}%) exceeds sector limit ({config.max_sector_pct:.1f}%); trim holding ({stock_weight:.1f}% weight) for concentration risk control."
+            else:
+                rationale = f"Risk trim trigger: Position weight ({stock_weight:.1f}%), sector risk ({sector_risk_exposure:.1f}%), or overextension active; trim for capital protection."
         elif decision in ("ACCUMULATE", "BUY"):
             if total_return is not None and total_return > 25.0 and technical_trend == "BEARISH":
                 horizon_long_term = f"INTACT — High conviction ({conv_str}) thesis intact; buyable pullback (return {ret_str} > 25%)"
-                rationale = f"Pullback within long-term thesis (return {ret_str} > 25%); price {cp_str} remains above invalidation {inv_str}."
+                rationale = f"Pullback accumulation: Total return {ret_str} > 25% with conviction ({conv_str}) and intact thesis above invalidation {inv_str}; price {cp_str} below 200 DMA ({d200_str}) offers dip-buy channel."
             else:
                 horizon_long_term = f"INTACT — High conviction ({conv_str}) thesis intact; price {cp_str} above invalidation ({inv_str})"
-                rationale = f"Healthy structural accumulation channel. Price {cp_str} vs 200 DMA ({d200_str}), total return {ret_str}."
-        else:
-            horizon_long_term = f"INTACT — Thesis intact ({conv_str}); price {cp_str} above invalidation ({inv_str})"
-            rationale = f"{explanation} Price {cp_str} vs 200 DMA ({d200_str}), total return {ret_str}."
+                rationale = f"Structural accumulation: Price {cp_str} > 50 DMA ({d50_str}) > 200 DMA ({d200_str}); weight {stock_weight:.1f}% < {config.max_position_pct:.1f}% max cap with conviction ({conv_str})."
+        else:  # HOLD
+            if technical_trend == "BEARISH" and total_return is not None and total_return < 0.0:
+                horizon_long_term = f"INTACT — High conviction ({conv_str}) thesis intact above invalidation ({inv_str}); drawdown monitored"
+                rationale = f"High-conviction pullback hold: Price {cp_str} < 200 DMA ({d200_str}) with return {ret_str}, but high conviction ({conv_str}) thesis remains INTACT above invalidation ({inv_str})."
+            elif technical_trend == "NEUTRAL":
+                horizon_long_term = f"INTACT — Thesis intact ({conv_str}); price {cp_str} above invalidation ({inv_str})"
+                rationale = f"Consolidation hold: Price {cp_str} moving sideways between 50 DMA ({d50_str}) and 200 DMA ({d200_str}); conviction ({conv_str}) thesis INTACT above invalidation ({inv_str})."
+            else:
+                horizon_long_term = f"INTACT — Thesis intact ({conv_str}); price {cp_str} above invalidation ({inv_str})"
+                rationale = f"Position hold: Technical trend {technical_trend}, total return {ret_str}, position weight {stock_weight:.1f}%; conviction ({conv_str}) thesis INTACT above invalidation ({inv_str})."
 
     if recommended_action == "Add on weakness (small)":
         conv_str = f"{int(conviction_val)}/5" if conviction_val is not None else "N/A"
