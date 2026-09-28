@@ -20,6 +20,12 @@ class SignalEvaluationResult:
     is_overextended: bool
     fundamental_pass: bool
     fundamental_unknown: bool
+    decision: str = ""
+    horizon_short_term: str = ""
+    horizon_long_term: str = ""
+    rationale: str = ""
+    sizing_note: str = ""
+    data_status: str = "OK"
 
 
 """
@@ -166,6 +172,56 @@ def evaluate_signal(
     else:
         recommended_action = "Hold"
 
+    # --- DERIVE DECISION ENGINE ADDITIVE FIELDS ---
+    if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
+        data_status = "NO DATA"
+    elif thesis_status == "NOT SET":
+        data_status = "NO THESIS"
+    else:
+        data_status = "OK"
+
+    decision = signal.split(" ", 1)[-1] if " " in signal else signal
+
+    if data_status == "NO DATA":
+        horizon_short_term = "NO DATA — Fresh price history unavailable"
+        horizon_long_term = "UNVERIFIED — Technical layer missing"
+        rationale = explanation
+    elif data_status == "NO THESIS":
+        horizon_short_term = f"{technical_trend} — Price evaluation complete"
+        horizon_long_term = "NO THESIS — Thesis not set for symbol"
+        rationale = explanation
+    else:
+        cp_str = f"₹{current_price:.2f}" if current_price is not None else "N/A"
+        d50_str = f"₹{dma_50:.2f}" if dma_50 is not None else "N/A"
+        d200_str = f"₹{dma_200:.2f}" if dma_200 is not None else "N/A"
+        ret_str = f"{total_return:+.2f}%" if total_return is not None else "N/A"
+        inv_str = f"₹{invalidation_price:.2f}" if invalidation_price is not None else "N/A"
+        conv_str = f"{int(conviction_val)}/5" if conviction_val is not None else "N/A"
+
+        horizon_short_term = f"{technical_trend} — Price {cp_str} vs 50 DMA ({d50_str}) and 200 DMA ({d200_str})"
+
+        if thesis_status == "INVALIDATED":
+            horizon_long_term = f"INVALIDATED — Price {cp_str} breached invalidation level {inv_str}"
+            rationale = f"Price {cp_str} breached invalidation level {inv_str}; thesis invalidated."
+        elif total_return is not None and total_return < 0.0 and technical_trend == "BEARISH":
+            horizon_long_term = f"STRESSED — Thesis intact above invalidation ({inv_str}), but return ({ret_str}) negative with 200 DMA breakdown"
+            rationale = f"Price {cp_str} breached 200 DMA ({d200_str}) with return {ret_str}; thesis intact above invalidation ({inv_str})."
+        elif total_return is not None and total_return > 25.0 and technical_trend == "BEARISH":
+            horizon_long_term = f"INTACT — Thesis intact ({conv_str}); price {cp_str} above invalidation ({inv_str}) with return {ret_str}"
+            rationale = f"Pullback within long-term thesis (return {ret_str} > 25%); price {cp_str} remains above invalidation {inv_str}."
+        else:
+            horizon_long_term = f"INTACT — Thesis intact ({conv_str}); price {cp_str} above invalidation ({inv_str})"
+            rationale = f"{explanation} Price {cp_str} vs 200 DMA ({d200_str}), total return {ret_str}."
+
+    if recommended_action == "Add on weakness (small)":
+        conv_str = f"{int(conviction_val)}/5" if conviction_val is not None else "N/A"
+        sizing_note = f"Add on weakness (small) — Conviction {conv_str} with intact thesis allows small tactical accumulation on deep dips."
+    elif signal == "🟢 ACCUMULATE":
+        conv_str = f"{int(conviction_val)}/5" if conviction_val is not None else "N/A"
+        sizing_note = f"Accumulate — Conviction {conv_str} with healthy structural accumulation channel."
+    else:
+        sizing_note = "N/A"
+
     return SignalEvaluationResult(
         signal=signal,
         recommended_action=recommended_action,
@@ -176,5 +232,11 @@ def evaluate_signal(
         is_overextended=is_overextended,
         fundamental_pass=fundamental_pass,
         fundamental_unknown=fundamental_unknown,
+        decision=decision,
+        horizon_short_term=horizon_short_term,
+        horizon_long_term=horizon_long_term,
+        rationale=rationale,
+        sizing_note=sizing_note,
+        data_status=data_status,
     )
 

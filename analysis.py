@@ -123,6 +123,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
                     thesis_dict[sym] = {
                         "thesis": str(t_row.get("Thesis", "NOT YET SET")).strip(),
                         "conviction": t_row.get("Conviction"),
+                        # Invalidation_Price is anchored to Avg_Cost at entry and does not adjust for unrealized gains — it is a thesis-broken trigger, not a trailing profit-protection stop.
                         "invalidation_price": t_row.get("Invalidation_Price"),
                     }
         except Exception as exc:
