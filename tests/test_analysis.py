@@ -92,7 +92,7 @@ def test_no_data_and_sector_cap_are_explicit(tmp_path, monkeypatch):
     ]
     assert list(tracking.columns[:5]) == expected_original_cols
 
-    # Verify all 16 columns are in exact expected schema
+    # Verify all 21 columns are in exact expected schema
     expected_full_cols = expected_original_cols + [
         "run_timestamp_ist",
         "current_price",
@@ -105,6 +105,11 @@ def test_no_data_and_sector_cap_are_explicit(tmp_path, monkeypatch):
         "Recommended_Action",
         "Thesis_Status",
         "Conviction",
+        "Decision",
+        "Horizon_Short_Term",
+        "Horizon_Long_Term",
+        "Rationale",
+        "Data_Status",
     ]
     assert list(tracking.columns) == expected_full_cols
 

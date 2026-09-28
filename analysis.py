@@ -129,13 +129,31 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         except Exception as exc:
             print(f"[warn] Error reading thesis file {thesis_file}: {exc}")
 
-    # --- LOAD HISTORICAL SIGNALS FOR EVENT-DRIVEN ALERTING ---
-    last_signals = {}
+    # --- LOAD HISTORICAL DECISIONS FOR EVENT-DRIVEN ALERTING ---
+    last_decisions = {}
     if os.path.exists(tracking_file):
         try:
             hist_df = pd.read_csv(tracking_file)
-            if not hist_df.empty and "Stock_Symbol" in hist_df.columns and "Model_Signal" in hist_df.columns:
-                last_signals = hist_df.groupby("Stock_Symbol")["Model_Signal"].last().to_dict()
+            if not hist_df.empty and "Stock_Symbol" in hist_df.columns:
+                if "Decision" in hist_df.columns:
+                    last_decisions = hist_df.groupby("Stock_Symbol")["Decision"].last().dropna().to_dict()
+                elif "Model_Signal" in hist_df.columns:
+                    raw_sigs = hist_df.groupby("Stock_Symbol")["Model_Signal"].last().to_dict()
+                    for sym, sig in raw_sigs.items():
+                        if pd.notna(sig):
+                            s_str = str(sig).strip()
+                            if "NO THESIS" in s_str:
+                                last_decisions[sym] = "NO THESIS"
+                            elif "NO DATA" in s_str:
+                                last_decisions[sym] = "NO DATA"
+                            elif "STRG SELL" in s_str:
+                                last_decisions[sym] = "SELL"
+                            elif "ACCUMULATE" in s_str:
+                                last_decisions[sym] = "ACCUMULATE"
+                            elif "TRIM" in s_str:
+                                last_decisions[sym] = "TRIM"
+                            else:
+                                last_decisions[sym] = "HOLD"
         except Exception as exc:
             print(f"[warn] Error reading historical signals from {tracking_file}: {exc}")
 
@@ -252,6 +270,11 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         thesis_status = eval_res.thesis_status
         conviction_disp = str(int(eval_res.conviction)) if eval_res.conviction is not None else ""
         technical_trend = eval_res.technical_trend
+        decision = eval_res.decision
+        horizon_short_term = eval_res.horizon_short_term
+        horizon_long_term = eval_res.horizon_long_term
+        rationale = eval_res.rationale
+        data_status = eval_res.data_status
 
         # Save to Main Display DataFrame
         analysis_results.append({
@@ -259,9 +282,10 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             "Sector": stock_sector,
             "Weight": f"{stock_weight:.1f}%",
             "Total Return": f"{total_return:+.2f}%",
+            "Decision": decision,
             "Signal": signal,
             "Recommended Action": recommended_action,
-            "Reasoning": explanation,
+            "Reasoning": rationale,
             "Thesis Status": thesis_status,
             "Conviction": conviction_disp
         })
@@ -294,20 +318,38 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             "technical_trend": technical_trend,
             "Recommended_Action": recommended_action,
             "Thesis_Status": thesis_status,
-            "Conviction": conviction_disp
+            "Conviction": conviction_disp,
+            "Decision": decision,
+            "Horizon_Short_Term": horizon_short_term,
+            "Horizon_Long_Term": horizon_long_term,
+            "Rationale": rationale,
+            "Data_Status": data_status,
         })
 
-        # --- EVENT-DRIVEN ALERT QUALIFICATION ---
-        last_sig = last_signals.get(broker_symbol)
-        signal_changed = (last_sig != signal)
+        # --- EVENT-DRIVEN ALERT QUALIFICATION (KEYED ON DECISION) ---
+        last_dec = last_decisions.get(broker_symbol)
+        decision_changed = (last_dec != decision)
         crossed_into_alert = (
-            signal in ("⚠️ NO THESIS", "🔴 STRG SELL")
-            and last_sig not in ("⚠️ NO THESIS", "🔴 STRG SELL")
+            decision in ("SELL", "TRIM")
+            and last_dec not in ("SELL", "TRIM")
         )
 
-        if is_full_review or signal_changed or crossed_into_alert:
+        if is_full_review or decision_changed or crossed_into_alert:
+            emoji_map = {
+                "ACCUMULATE": "🟢",
+                "BUY": "🟢",
+                "HOLD": "🟡",
+                "TRIM": "✂️",
+                "SELL": "🔴",
+                "NO THESIS": "⚠️",
+                "NO DATA": "⚪"
+            }
+            dec_emoji = emoji_map.get(decision, "📊")
             telegram_lines.append(
-                f"{signal} | {broker_symbol} ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}% | Action: {recommended_action}"
+                f"{dec_emoji} <b>{decision}</b> | <b>{broker_symbol}</b> ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}%\n"
+                f"• Short: {horizon_short_term}\n"
+                f"• Long: {horizon_long_term}\n"
+                f"• Rationale: {rationale}"
             )
 
     # --- COMPILING THE HISTORICAL TIME SERIES RECORD ---
