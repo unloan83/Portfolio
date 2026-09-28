@@ -335,17 +335,16 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
 
     # Dispatch Telegram Notification Only If Qualifying Changes Exist
     if telegram_lines:
-        header = f"🛡️ *Multi-Agent Portfolio Matrix ({date_str})*"
+        header_title = f"🛡️ Multi-Agent Portfolio Matrix ({date_str})"
         if is_full_review:
-            header += " [FULL REVIEW]"
-        summary_msg = f"{header}\n\n" + "\n".join(telegram_lines[:18])
+            header_title += " [FULL REVIEW]"
+        summary_msg_html = f"<b>{header_title}</b>\n\n" + "\n".join(telegram_lines[:18])
         if "GITHUB_OUTPUT" in os.environ:
             with open(os.environ["GITHUB_OUTPUT"], "a") as env_file:
                 env_file.write("TELEGRAM_SUMMARY<<EOF\n")
-                env_file.write(summary_msg + "\n")
+                env_file.write(summary_msg_html + "\n")
                 env_file.write("EOF\n")
 
-        summary_msg_html = f"<b>{header}</b>\n\n" + "\n".join(telegram_lines[:18])
         if notify_fn is not None:
             notify_fn(summary_msg_html)
     else:
