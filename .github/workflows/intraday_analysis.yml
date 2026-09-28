@@ -1,12 +1,12 @@
 name: Intraday Portfolio Stock Analysis
 
 on:
-  schedule:
-    # Note: NSE holidays are not excluded by this cron schedule and will produce stale-price rows on market holidays.
-    - cron: '50 3 * * 1-5'   # ~9:20 IST (03:50 UTC), weekdays
-    - cron: '50 6 * * 1-5'   # ~12:20 IST (06:50 UTC), weekdays
-    - cron: '45 9 * * 1-5'   # ~15:15 IST (09:45 UTC), weekdays
-    - cron: '0 12 * * 5'     # Weekly Friday review
+  # schedule:
+  #   # Note: NSE holidays are not excluded by this cron schedule and will produce stale-price rows on market holidays.
+  #   - cron: '50 3 * * 1-5'   # ~9:20 IST (03:50 UTC), weekdays
+  #   - cron: '50 6 * * 1-5'   # ~12:20 IST (06:50 UTC), weekdays
+  #   - cron: '45 9 * * 1-5'   # ~15:15 IST (09:45 UTC), weekdays
+  #   - cron: '0 12 * * 5'     # Weekly Friday review
   workflow_dispatch: # Allows manual trigger via GitHub UI / API
     inputs:
       run_type:
