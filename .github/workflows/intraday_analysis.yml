@@ -1,6 +1,8 @@
 name: Intraday Portfolio Stock Analysis
 
 on:
+  push:
+    branches: [ main ]
   schedule:
     # Note: NSE holidays are not excluded by this cron schedule and will produce stale-price rows on market holidays.
     - cron: '50 3 * * 1-5'   # ~9:20 IST (03:50 UTC), weekdays
@@ -12,7 +14,7 @@ on:
       run_type:
         description: 'Run type (incremental or full)'
         required: false
-        default: 'incremental'
+        default: 'full'
         type: choice
         options:
           - incremental
@@ -47,9 +49,11 @@ jobs:
     - name: Run Analysis Model
       id: run_script
       env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_TO }}
-        RUN_TYPE: ${{ github.event.inputs.run_type || (github.event_name == 'schedule' && github.event.schedule == '0 12 * * 5' && 'full' || 'incremental') }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN || secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID || secrets.TELEGRAM_TO }}
+        TELEGRAM_TO: ${{ secrets.TELEGRAM_TO || secrets.TELEGRAM_CHAT_ID }}
+        RUN_TYPE: ${{ github.event.inputs.run_type || ((github.event_name == 'schedule' && github.event.schedule == '0 12 * * 5' || github.event_name == 'push') && 'full' || 'incremental') }}
       run: python analysis.py
 
     - name: Commit and Push Report
