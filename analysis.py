@@ -1,5 +1,6 @@
 import os
 import re
+import html
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import pandas as pd
@@ -345,11 +346,16 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
                 "NO DATA": "⚪"
             }
             dec_emoji = emoji_map.get(decision, "📊")
+            safe_dec = html.escape(str(decision))
+            safe_sym = html.escape(str(broker_symbol))
+            safe_short = html.escape(str(horizon_short_term))
+            safe_long = html.escape(str(horizon_long_term))
+            safe_rat = html.escape(str(rationale))
             telegram_lines.append(
-                f"{dec_emoji} <b>{decision}</b> | <b>{broker_symbol}</b> ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}%\n"
-                f"• Short: {horizon_short_term}\n"
-                f"• Long: {horizon_long_term}\n"
-                f"• Rationale: {rationale}"
+                f"{dec_emoji} <b>{safe_dec}</b> | <b>{safe_sym}</b> ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}%\n"
+                f"• Short: {safe_short}\n"
+                f"• Long: {safe_long}\n"
+                f"• Rationale: {safe_rat}"
             )
 
     # --- COMPILING THE HISTORICAL TIME SERIES RECORD ---
@@ -382,15 +388,31 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         header_title = f"🛡️ Multi-Agent Portfolio Matrix ({date_str})"
         if is_full_review:
             header_title += " [FULL REVIEW]"
-        summary_msg_html = f"<b>{header_title}</b>\n\n" + "\n".join(telegram_lines[:18])
+        
+        chunks = []
+        current_chunk = [f"<b>{header_title}</b>\n"]
+        current_len = len(current_chunk[0])
+        
+        for line in telegram_lines:
+            if current_len + len(line) + 2 > 3800:
+                chunks.append("\n".join(current_chunk))
+                current_chunk = [f"<b>{header_title} (Cont.)</b>\n", line]
+                current_len = len(current_chunk[0]) + len(line) + 1
+            else:
+                current_chunk.append(line)
+                current_len += len(line) + 1
+        if current_chunk:
+            chunks.append("\n".join(current_chunk))
+
         if "GITHUB_OUTPUT" in os.environ:
             with open(os.environ["GITHUB_OUTPUT"], "a") as env_file:
                 env_file.write("TELEGRAM_SUMMARY<<EOF\n")
-                env_file.write(summary_msg_html + "\n")
+                env_file.write(chunks[0] + "\n")
                 env_file.write("EOF\n")
 
         if notify_fn is not None:
-            notify_fn(summary_msg_html)
+            for chunk in chunks:
+                notify_fn(chunk)
     else:
         print("[info] Incremental run with 0 qualifying signal changes. Telegram alert suppressed.")
         if "GITHUB_OUTPUT" in os.environ:
