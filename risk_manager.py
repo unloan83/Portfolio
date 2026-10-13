@@ -98,7 +98,14 @@ class RiskManager:
             equity * (self.config.max_position_pct / 100) - current_position_value,
         ) / entry_price
 
-        sector_exposure = self.portfolio.exposure_by_sector().get(sector, 0.0)
+        financials_group = ("Banking", "Financial Services", "Insurance")
+        if sector in financials_group:
+            sector_exposure = sum(
+                self.portfolio.exposure_by_sector().get(s, 0.0)
+                for s in financials_group
+            )
+        else:
+            sector_exposure = self.portfolio.exposure_by_sector().get(sector, 0.0)
         remaining_sector_room_pct = max(
             0.0, self.config.max_sector_pct - sector_exposure
         )

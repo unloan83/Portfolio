@@ -46,6 +46,9 @@ class RiskConfig:
     # Price / 200 DMA outside [1/x, x] cannot happen through normal trading and
     # indicates a broken price history.
     max_price_to_dma_ratio: float = _float("MAX_PRICE_TO_DMA_RATIO", 2.5)
+    # Trailing stop distance from 52-week high in multiples of ATR (default 3x ATR).
+    trailing_stop_atr_multiple: float = _float("TRAILING_STOP_ATR_MULTIPLE", 3.0)
 
 
 RISK_CONFIG = RiskConfig()
+

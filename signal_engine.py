@@ -44,6 +44,8 @@ class SignalEvaluationResult:
     rationale: str = ""
     sizing_note: str = ""
     data_status: str = "OK"
+    trailing_stop: Optional[float] = None
+    trailing_stop_hit: bool = False
 
 
 """
@@ -52,6 +54,7 @@ DECISION TREE:
 2. NO THESIS (thesis missing or "NOT YET SET") -> Signal: "⚠️ NO THESIS", Reason: "Thesis not set for symbol."
 3. THESIS INVALIDATED (current_price <= Invalidation_Price) -> Signal: "🔴 STRG SELL", Reason: "thesis invalidated"
 4. THESIS INTACT:
+   - Trailing Stop hit (price < trailing_stop) -> Decision: "TRIM" (sell half), Rationale: "trailing stop hit"
    - BEARISH technical + total_return > 25% -> Signal: "🟡 HOLD / TRIM WATCH", Reason: "pullback within thesis, not a breakdown"
    - BEARISH technical + total_return < 0% -> Signal: "🔴 STRG SELL", Reason: "breakdown + thesis stress"
    - BEARISH technical (other) -> Signal: "🔴 STRG SELL", Reason: "Below 200 DMA structural breakdown."
@@ -64,7 +67,8 @@ DECISION TREE:
 
 RECOMMENDED ACTION:
 Derived from the decision via DECISION_ACTIONS. ACCUMULATE on a BEARISH
-pullback (return > 25%) reads "Add on weakness (small)".
+pullback (return > 25%) reads "Add on weakness (small)". Trailing stop trim
+sells half position.
 
 DECISION WITHOUT USABLE TECHNICAL DATA:
 The broker price (fallback_price) still drives the thesis-invalidation and
@@ -89,6 +93,8 @@ def evaluate_signal(
     config: RiskConfig = RISK_CONFIG,
     fallback_price: Optional[float] = None,
     data_issue: Optional[str] = None,
+    high_52w: Optional[float] = None,
+    atr: Optional[float] = None,
 ) -> SignalEvaluationResult:
     """Evaluates combined technical, thesis, and fundamental signals for a single symbol."""
     fundamental_pass = roe is None or roe >= config.minimum_roe
@@ -132,6 +138,26 @@ def evaluate_signal(
         thesis_status = "INVALIDATED"
     else:
         thesis_status = "INTACT"
+
+    # Trailing stop: max(invalidation price, 52-week high minus N*ATR)
+    trailing_stop = None
+    if high_52w is not None and atr is not None and atr > 0:
+        atr_stop = high_52w - (config.trailing_stop_atr_multiple * atr)
+        if invalidation_price is not None:
+            trailing_stop = max(invalidation_price, atr_stop)
+        else:
+            trailing_stop = atr_stop
+    elif invalidation_price is not None:
+        trailing_stop = invalidation_price
+
+    trailing_stop_hit = False
+    if (
+        thesis_status == "INTACT"
+        and eval_price is not None
+        and trailing_stop is not None
+        and eval_price < trailing_stop
+    ):
+        trailing_stop_hit = True
 
     # Determine Signal and Explanation based on Decision Tree
     if not has_technical_data:
@@ -226,6 +252,8 @@ def evaluate_signal(
     ):
         # Reserve SELL for: thesis invalidated OR (BEARISH + negative return + conviction < 4 / thesis not intact)
         decision = "SELL"
+    elif trailing_stop_hit:
+        decision = "TRIM"
     elif is_overextended or stock_weight > config.max_position_pct or (sector_risk_exposure > config.max_sector_pct and stock_weight >= (config.max_position_pct / 2)):
         # TRIM if overextended, position weight exceeds max cap (8%), or sector exposure > 25% for a major holding
         decision = "TRIM"
@@ -291,7 +319,11 @@ def evaluate_signal(
             rationale = f"Structural breakdown: Price {cp_str} < 200 DMA ({d200_str}) with return {ret_str}; conviction ({conv_str}) < 4 or thesis {thesis_status} insufficient to hold breakdown."
         elif decision == "TRIM":
             horizon_long_term = f"INTACT — High conviction ({conv_str}) thesis intact; risk limits require position/sector trimming"
-            if is_overextended:
+            if trailing_stop_hit:
+                ts_str = f"₹{trailing_stop:.2f}" if trailing_stop is not None else "N/A"
+                horizon_long_term = f"TRIM — Trailing stop hit ({ts_str}); profit protection"
+                rationale = "trailing stop hit"
+            elif is_overextended:
                 overextension_pct = config.overextension_multiple - 1.0
                 rationale = f"Overextended: Price {cp_str} > 50 DMA ({d50_str}) by >{overextension_pct:.0%}; position trimmed for peak profit lock."
             elif stock_weight > config.max_position_pct:
@@ -347,5 +379,7 @@ def evaluate_signal(
         rationale=rationale,
         sizing_note=sizing_note,
         data_status=data_status,
+        trailing_stop=trailing_stop,
+        trailing_stop_hit=trailing_stop_hit,
     )
 

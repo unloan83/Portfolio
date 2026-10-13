@@ -270,3 +270,166 @@ def test_report_gives_sized_actions(tmp_path, monkeypatch):
     assert "STRG SELL" not in readme and "| Signal" not in readme
     # Sorted by numeric weight, largest first.
     assert readme.index("| REST") < readme.index("| BIG") < readme.index("| SMALL")
+
+
+def test_sector_map_etfs_and_financials():
+    assert analysis.SECTOR_MAP["ICIGOL"] == "Commodities"
+    assert analysis.SECTOR_MAP["ICIPSE"] == "Commodities"
+    assert analysis.SECTOR_MAP["ICINIF"] == "Broad Market"
+    assert analysis.SECTOR_MAP["HDF250"] == "Broad Market"
+    assert analysis.SECTOR_MAP["MIR150"] == "Broad Market"
+    assert analysis.SECTOR_MAP["NIPNIT"] == "IT"
+    assert analysis.SECTOR_MAP["KOTAKBKETF"] == "Banking"
+    assert "Banking" in analysis.FINANCIALS_SECTORS
+    assert "Financial Services" in analysis.FINANCIALS_SECTORS
+    assert "Insurance" in analysis.FINANCIALS_SECTORS
+
+
+class MockPullbackTicker:
+    """Ticker that rose to 250, then pulled back to 210 with ATR ~10."""
+
+    def __init__(self, symbol: str):
+        self.symbol = symbol
+        self.info = {"returnOnEquity": 0.20}
+
+    def history(self, period: str) -> pd.DataFrame:
+        prices = list(np.linspace(100, 250, 230)) + list(np.linspace(250, 210, 20))
+        close = pd.Series(prices)
+        return pd.DataFrame({"Close": close, "High": close + 5, "Low": close - 5})
+
+
+def test_trailing_stop_rule_trims_half_winner(tmp_path, monkeypatch):
+    # WINNER holding: 80 shares @ cost 100, current price ~210, 52w high 255, ATR 10
+    # Invalidation price 80.
+    # 52w high - 3*ATR = 255 - 30 = 225.
+    # Price 210 is below trailing stop 225, but well above invalidation 80.
+    portfolio = pd.DataFrame(
+        [
+            {"Stock Symbol": "WINNER", "Company Name": "Winner Co", "Qty": 80, "Average Cost Price": 100, "Current Market Price": 210},
+            {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 1000, "Average Cost Price": 100, "Current Market Price": 210},
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame(
+        [
+            {"Stock Symbol": "WINNER", "Thesis": "Growth thesis", "Conviction": "4/5", "Invalidation_Price": 80, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "5/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+        ]
+    ).to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "WINNER", "WINNER.NS")
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "WINNER", "Auto")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", MockPullbackTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    tracking = pd.read_csv(tmp_path / "re-engineering.csv").set_index("Stock_Symbol")
+    winner_row = tracking.loc["WINNER"]
+    assert winner_row["Decision"] == "TRIM"
+    assert winner_row["Rationale"] == "trailing stop hit"
+    # Sells half of 80 shares = 40 shares
+    assert winner_row["Recommended_Action"].startswith("Trim 40 sh")
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "| Trailing Stop" in readme
+    assert "trailing stop hit" in readme
+
+
+def test_thesis_invalidation_wins_over_trailing_stop():
+    from config import RiskConfig
+    from signal_engine import evaluate_signal
+
+    # Invalidation price 100. 52w high 150, ATR 10 -> trailing stop = 120.
+    # If price drops to 90 (below both 120 and 100), thesis invalidation wins (SELL, not TRIM).
+    res = evaluate_signal(
+        current_price=90.0,
+        dma_50=120.0,
+        dma_200=110.0,
+        roe=0.15,
+        invalidation_price=100.0,
+        high_52w=150.0,
+        atr=10.0,
+        stock_weight=3.0,
+        config=RiskConfig(),
+    )
+    assert res.decision == "SELL"
+    assert res.thesis_status == "INVALIDATED"
+
+
+def test_consolidation_section_in_report(tmp_path, monkeypatch):
+    # Total portfolio equity = 100k.
+    # CANDIDATE: Qty 5 @ 100 = 500 (0.5% weight < 1%), conviction 3 (< 5) -> Candidate!
+    # HIGH_CONV: Qty 5 @ 100 = 500 (0.5% weight < 1%), conviction 5 (>= 5) -> NOT Candidate!
+    # LARGE_POS: Qty 50 @ 100 = 5000 (5.0% weight > 1%), conviction 3 -> NOT Candidate!
+    # REST: Qty 940 @ 100 = 94,000 (94% weight) -> NOT Candidate.
+    portfolio = pd.DataFrame(
+        [
+            {"Stock Symbol": "CANDIDATE", "Company Name": "Small Low Conv", "Qty": 5, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "HIGH_CONV", "Company Name": "Small High Conv", "Qty": 5, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "LARGE_POS", "Company Name": "Large Low Conv", "Qty": 50, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "REST", "Company Name": "Rest", "Qty": 940, "Average Cost Price": 100, "Current Market Price": 100},
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame(
+        [
+            {"Stock Symbol": "CANDIDATE", "Thesis": "Thesis", "Conviction": "3/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "HIGH_CONV", "Thesis": "Thesis", "Conviction": "5/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "LARGE_POS", "Thesis": "Thesis", "Conviction": "3/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "REST", "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+        ]
+    ).to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    for sym in ("CANDIDATE", "HIGH_CONV", "LARGE_POS", "REST"):
+        monkeypatch.setitem(analysis.TICKER_MAP, sym, f"{sym}.NS")
+        monkeypatch.setitem(analysis.SECTOR_MAP, sym, "TestSector")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Portfolio Consolidation" in readme
+    assert "CANDIDATE" in readme
+    assert "Exit all 5 sh" in readme
+    consolidation_section = readme.split("### Portfolio Consolidation")[1]
+    assert "CANDIDATE" in consolidation_section
+    assert "HIGH_CONV" not in consolidation_section
+    assert "LARGE_POS" not in consolidation_section
+
+
+def test_combined_financials_sector_cap(tmp_path, monkeypatch):
+    # Banking (15%) + Financial Services (6%) + Insurance (5%) = 26% > 25% cap.
+    portfolio = pd.DataFrame(
+        [
+            {"Stock Symbol": "BANK1", "Company Name": "Bank 1", "Qty": 150, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "FIN1", "Company Name": "Fin 1", "Qty": 60, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "INS1", "Company Name": "Ins 1", "Qty": 50, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "OTHER", "Company Name": "Other", "Qty": 740, "Average Cost Price": 100, "Current Market Price": 100},
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame(
+        [
+            {"Stock Symbol": s, "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+            for s in ("BANK1", "FIN1", "INS1", "OTHER")
+        ]
+    ).to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    for s in ("BANK1", "FIN1", "INS1", "OTHER"):
+        monkeypatch.setitem(analysis.TICKER_MAP, s, f"{s}.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BANK1", "Banking")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "FIN1", "Financial Services")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "INS1", "Insurance")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "OTHER", "Power")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "* **Financials (combined)**:" in readme
+    assert "* **Banking**:" in readme
+    assert "* **Financial Services**:" in readme
+    assert "* **Insurance**:" in readme
+

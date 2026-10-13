@@ -38,8 +38,12 @@ SECTOR_MAP = {
     'LIC': 'Insurance', 'DRREDD': 'Pharma', 'SEQSCI': 'Pharma',
     'JSWENE': 'Power', 'NHPC': 'Power', 'NTPC': 'Power', 'NTPGRE': 'Power', 'SJVLIM': 'Power', 'TATPOW': 'Power',
     'GAIL': 'Oil & Gas', 'GUJGA': 'Oil & Gas', 'HINPET': 'Oil & Gas', 'ONGC': 'Oil & Gas', 'PETLNG': 'Oil & Gas', 'RELIND': 'Oil & Gas',
-    'IDECEL': 'Telecom'
+    'IDECEL': 'Telecom',
+    'ICIGOL': 'Commodities', 'ICIPSE': 'Commodities',
+    'ICINIF': 'Broad Market', 'HDF250': 'Broad Market', 'MIR150': 'Broad Market',
 }
+
+FINANCIALS_SECTORS = ("Banking", "Financial Services", "Insurance")
 
 # NSE price bands cap a single session's move far below 2.5x, so a bigger
 # day-over-day jump in Yahoo history is an unadjusted split/bonus/consolidation.
@@ -62,8 +66,8 @@ def adjust_unadjusted_splits(history: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_market_data(yf_ticker: str) -> dict:
-    """Price, 50/200 DMA, 14-day ATR and ROE for one ticker; failures are tagged."""
-    result = {"price": None, "dma_50": None, "dma_200": None, "atr": None, "roe": None, "trend_override": None}
+    """Price, 50/200 DMA, 14-day ATR, 52-week High and ROE for one ticker; failures are tagged."""
+    result = {"price": None, "dma_50": None, "dma_200": None, "atr": None, "roe": None, "high_52w": None, "trend_override": None}
     if yf_ticker in ('UNLISTED', 'TODO_VERIFY'):
         result["trend_override"] = "NO_TICKER"
         return result
@@ -87,6 +91,10 @@ def fetch_market_data(yf_ticker: str) -> dict:
         result["price"] = float(clean_close.iloc[-1])
         result["dma_50"] = float(clean_close.rolling(window=50).mean().iloc[-1])
         result["dma_200"] = float(clean_close.rolling(window=200).mean().iloc[-1])
+        if "High" in data.columns and not data["High"].dropna().empty:
+            result["high_52w"] = float(data["High"].max())
+        else:
+            result["high_52w"] = float(clean_close.max())
         if {"High", "Low"}.issubset(data.columns):
             atr_series = compute_atr(data.rename(columns={"High": "high", "Low": "low", "Close": "close"}))
             if not atr_series.empty and pd.notna(atr_series.iloc[-1]):
@@ -169,6 +177,8 @@ def size_action(
             shares = max(shares, trim_quantity(qty, price, total_value, target_weight))
         if eval_res.is_overextended:
             shares = max(shares, math.ceil(qty * config.overextension_trim_fraction))
+        if getattr(eval_res, "trailing_stop_hit", False):
+            shares = max(shares, math.ceil(qty * 0.5))
         shares = int(min(shares, qty))
         if shares <= 0:
             return action
@@ -351,6 +361,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     df['Weight_%'] = (df['Current_Value'] / total_portfolio_value) * 100
 
     sector_allocations = df.groupby('Sector')['Weight_%'].sum().to_dict()
+    financials_total = sum(sector_allocations.get(s, 0.0) for s in FINANCIALS_SECTORS)
     risk_manager = RiskManager(
         _PortfolioView(
             holdings={
@@ -386,7 +397,10 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         technical_trend_override = md["trend_override"]
 
         # --- EXECUTIVE COORDINATOR ENGINE ---
-        sector_risk_exposure = sector_allocations.get(stock_sector, 0)
+        if stock_sector in FINANCIALS_SECTORS:
+            sector_risk_exposure = financials_total
+        else:
+            sector_risk_exposure = sector_allocations.get(stock_sector, 0)
         total_return = ((valuation_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
@@ -432,6 +446,8 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             config=RISK_CONFIG,
             fallback_price=csv_current_price,
             data_issue=md["issue"],
+            high_52w=md.get("high_52w"),
+            atr=md.get("atr"),
         )
         signal = eval_res.signal
         recommended_action = size_action(
@@ -457,12 +473,15 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         data_status = eval_res.data_status
 
         # Save to Main Display DataFrame
+        ts_val = eval_res.trailing_stop
+        ts_str = f"₹{ts_val:.2f}" if ts_val is not None else "N/A"
         analysis_results.append({
             "_weight": stock_weight,
             "Symbol": broker_symbol,
             "Sector": stock_sector,
             "Weight": f"{stock_weight:.1f}%",
             "Total Return": f"{total_return:+.2f}%",
+            "Trailing Stop": ts_str,
             "Decision": decision,
             "Action": recommended_action,
             "Reasoning": rationale,
@@ -562,9 +581,63 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     sector_summary_md = "\n### Sector Concentration Metrics\n"
     for sec, w in sorted(sector_allocations.items(), key=lambda x: x[1], reverse=True):
         sector_summary_md += f"* **{sec}**: {w:.1f}%\n"
+    sector_summary_md += f"* **Financials (combined)**: {financials_total:.1f}%\n"
 
-    markdown_output = f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n" \
-                      f"### Asset Health Assessment\n{report_df.to_markdown(index=False)}\n" + sector_summary_md
+    # Consolidation section: holdings <1% weight with conviction <5
+    consolidation_candidates = []
+    for _, row in df.iterrows():
+        sym = row["Stock Symbol"]
+        w = row["Weight_%"]
+        qty = row["Qty"]
+        px = row["Valuation_Price"]
+        t_info = thesis_dict.get(sym, {})
+        conv = t_info.get("conviction")
+        conv_val = None
+        if conv is not None and not pd.isna(conv) and str(conv).strip() != "":
+            s_conv = str(conv).strip()
+            try:
+                conv_val = float(s_conv)
+            except ValueError:
+                match = re.search(r"(\d+(?:\.\d+)?)", s_conv)
+                if match:
+                    try:
+                        conv_val = float(match.group(1))
+                    except ValueError:
+                        conv_val = None
+        if w < 1.0 and (conv_val is None or conv_val < 5.0):
+            conv_disp = str(int(conv_val)) if conv_val is not None else "N/A"
+            consolidation_candidates.append({
+                "_weight": w,
+                "Symbol": sym,
+                "Sector": row["Sector"],
+                "Weight": f"{w:.1f}%",
+                "Conviction": conv_disp,
+                "Shares to Exit": f"Exit all {int(qty)} sh (~₹{qty * px:,.0f})",
+            })
+
+    consolidation_md = "\n### Portfolio Consolidation\n"
+    consolidation_md += (
+        f"Portfolio holds {len(df)} positions versus target maximum of "
+        f"{RISK_CONFIG.max_open_positions} (`config.max_open_positions`). "
+        f"The following {len(consolidation_candidates)} holdings are under 1.0% portfolio weight "
+        "with conviction below 5 and are candidates for consolidation/exit:\n\n"
+    )
+    if consolidation_candidates:
+        consol_df = (
+            pd.DataFrame(consolidation_candidates)
+            .sort_values(by="_weight", ascending=True)
+            .drop(columns="_weight")
+        )
+        consolidation_md += consol_df.to_markdown(index=False) + "\n"
+    else:
+        consolidation_md += "No holdings currently qualify as consolidation candidates.\n"
+
+    markdown_output = (
+        f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n"
+        f"### Asset Health Assessment\n{report_df.to_markdown(index=False)}\n"
+        + sector_summary_md
+        + consolidation_md
+    )
 
     with open("README.md", "w") as f:
         f.write(markdown_output)
