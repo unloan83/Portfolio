@@ -192,8 +192,14 @@ def test_consecutive_run_suppresses_telegram_notification(tmp_path, monkeypatch)
 
 
 
-def test_gujarat_gas_ticker_fixed():
-    assert analysis.TICKER_MAP["GUJGA"] == "GUJGASLTD.NS"
+def test_gujarat_gas_ticker():
+    # GUJGASLTD is delisted (404); official post-merger ticker is GUJENERGY.NS
+    assert analysis.TICKER_MAP["GUJGA"] == "GUJENERGY.NS"
+
+
+def test_icinif_ticker_mapping():
+    # NIFTYIETF.NS has <200 bars; 537007.BO provides full 1y history
+    assert analysis.TICKER_MAP["ICINIF"] == "537007.BO"
 
 
 def test_adjust_unadjusted_splits_rescales_history():
