@@ -9,6 +9,24 @@ from typing import Optional
 from config import RISK_CONFIG, RiskConfig
 
 
+# Technical states in which no trend could be computed. BAD_DATA means a price
+# history was fetched but failed a sanity check, so it must not drive a trade.
+DATA_FAILURE_TRENDS = ("NO_DATA", "FETCH_ERROR", "NO_TICKER", "BAD_DATA")
+
+# One action per decision, so the report never shows e.g. SELL next to "Hold".
+# analysis.py appends share counts to TRIM / ACCUMULATE / BUY.
+DECISION_ACTIONS = {
+    "SELL": "Exit",
+    "TRIM": "Trim",
+    "ACCUMULATE": "Accumulate",
+    "BUY": "Buy",
+    "HOLD": "Hold",
+    "NO THESIS": "Set thesis in thesis.csv",
+    "NO DATA": "Verify price manually",
+    "VERIFY DATA": "Verify price data before acting",
+}
+
+
 @dataclass(frozen=True)
 class SignalEvaluationResult:
     signal: str
@@ -30,7 +48,7 @@ class SignalEvaluationResult:
 
 """
 DECISION TREE:
-1. NO DATA / FETCH ERROR / NO TICKER -> Signal: "⚪ NO DATA"
+1. NO DATA / FETCH ERROR / NO TICKER / BAD DATA -> Signal: "⚪ NO DATA"
 2. NO THESIS (thesis missing or "NOT YET SET") -> Signal: "⚠️ NO THESIS", Reason: "Thesis not set for symbol."
 3. THESIS INVALIDATED (current_price <= Invalidation_Price) -> Signal: "🔴 STRG SELL", Reason: "thesis invalidated"
 4. THESIS INTACT:
@@ -44,10 +62,14 @@ DECISION TREE:
    - BULLISH -> Signal: "🟢 ACCUMULATE", Reason: "Healthy structural accumulation channel."
    - Neutral / Other -> Signal: "🟡 HOLD", Reason: "Sideways consolidation pattern."
 
-RECOMMENDED ACTION MATRIX:
-- Conviction 4-5 + thesis intact + BEARISH pullback = "Add on weakness (small)"
-- Conviction 1-2 + thesis invalidated = "Exit"
-- All other cases = "Hold"
+RECOMMENDED ACTION:
+Derived from the decision via DECISION_ACTIONS. ACCUMULATE on a BEARISH
+pullback (return > 25%) reads "Add on weakness (small)".
+
+DECISION WITHOUT USABLE TECHNICAL DATA:
+The broker price (fallback_price) still drives the thesis-invalidation and
+position-cap checks, giving SELL or TRIM; otherwise NO DATA (nothing fetched)
+or VERIFY DATA (fetched data failed a sanity check, see data_issue).
 """
 
 
@@ -65,6 +87,8 @@ def evaluate_signal(
     invalidation_price: Optional[float] = None,
     stock_weight: float = 0.0,
     config: RiskConfig = RISK_CONFIG,
+    fallback_price: Optional[float] = None,
+    data_issue: Optional[str] = None,
 ) -> SignalEvaluationResult:
     """Evaluates combined technical, thesis, and fundamental signals for a single symbol."""
     fundamental_pass = roe is None or roe >= config.minimum_roe
@@ -72,7 +96,9 @@ def evaluate_signal(
 
     is_overextended = False
 
-    if technical_trend_override is not None:
+    if data_issue:
+        technical_trend = "BAD_DATA"
+    elif technical_trend_override is not None:
         technical_trend = technical_trend_override
     elif current_price is None or dma_50 is None or dma_200 is None:
         technical_trend = "NO_DATA"
@@ -92,7 +118,8 @@ def evaluate_signal(
         thesis_str != ""
         and thesis_str not in ("NOT YET SET", "NOT SET", "NAN", "NONE", "NULL", "UNDEFINED")
     )
-    eval_price = current_price if current_price is not None else None
+    has_technical_data = technical_trend not in DATA_FAILURE_TRENDS
+    eval_price = current_price if has_technical_data else fallback_price
 
     thesis_invalidated = False
     if thesis_is_set and invalidation_price is not None and eval_price is not None:
@@ -107,12 +134,14 @@ def evaluate_signal(
         thesis_status = "INTACT"
 
     # Determine Signal and Explanation based on Decision Tree
-    if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
+    if not has_technical_data:
         signal = "⚪ NO DATA"
         explanation = (
             f"Could not evaluate ({technical_trend.replace('_', ' ').lower()}) "
             "— verify manually."
         )
+        if data_issue:
+            explanation += f" {data_issue}"
     elif thesis_status == "NOT SET":
         signal = "⚠️ NO THESIS"
         explanation = "Thesis not set for symbol."
@@ -158,7 +187,6 @@ def evaluate_signal(
         signal = "🟡 HOLD"
         explanation = "Sideways consolidation pattern."
 
-    # Derive Recommended Action
     conviction_val = None
     if conviction is not None:
         try:
@@ -166,15 +194,10 @@ def evaluate_signal(
         except (ValueError, TypeError):
             conviction_val = None
 
-    if conviction_val in (4.0, 5.0) and thesis_status == "INTACT" and technical_trend == "BEARISH" and (total_return is not None and total_return > 25.0):
-        recommended_action = "Add on weakness (small)"
-    elif conviction_val in (1.0, 2.0) and thesis_status == "INVALIDATED":
-        recommended_action = "Exit"
-    else:
-        recommended_action = "Hold"
-
     # --- DERIVE DECISION ENGINE ADDITIVE FIELDS ---
-    if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
+    if technical_trend == "BAD_DATA":
+        data_status = "BAD DATA"
+    elif not has_technical_data:
         data_status = "NO DATA"
     elif thesis_status == "NOT SET":
         data_status = "NO THESIS"
@@ -182,8 +205,15 @@ def evaluate_signal(
         data_status = "OK"
 
     # 1. Decision Derivation Tree (Strict, Non-Contradictory)
-    if data_status == "NO DATA":
-        decision = "NO DATA"
+    if not has_technical_data:
+        if thesis_status == "INVALIDATED":
+            decision = "SELL"
+        elif stock_weight > config.max_position_pct:
+            decision = "TRIM"
+        elif data_status == "BAD DATA":
+            decision = "VERIFY DATA"
+        else:
+            decision = "NO DATA"
     elif data_status == "NO THESIS":
         decision = "NO THESIS"
     elif thesis_status == "INVALIDATED":
@@ -219,10 +249,25 @@ def evaluate_signal(
         decision = "HOLD"
 
     # 2. Horizon and Rationale Construction (Harmonized with Decision & Dynamic Variables)
-    if data_status == "NO DATA":
-        horizon_short_term = "NO DATA — Fresh price history unavailable"
-        horizon_long_term = "UNVERIFIED — Technical layer missing"
-        rationale = f"Missing data: Technical price history unavailable ({technical_trend.replace('_', ' ').lower()}); evaluation incomplete."
+    if not has_technical_data:
+        trend_str = technical_trend.replace('_', ' ').lower()
+        fb_str = f"₹{fallback_price:.2f}" if fallback_price is not None else "N/A"
+        inv_str = f"₹{invalidation_price:.2f}" if invalidation_price is not None else "N/A"
+        if data_issue:
+            horizon_short_term = f"BAD DATA — {data_issue}"
+            missing = f"Unreliable price data: {data_issue}"
+        else:
+            horizon_short_term = "NO DATA — Fresh price history unavailable"
+            missing = f"Missing data: Technical price history unavailable ({trend_str})"
+        if decision == "SELL":
+            horizon_long_term = f"INVALIDATED — Broker price {fb_str} breached invalidation level {inv_str}"
+            rationale = f"Thesis invalidated: Broker price {fb_str} <= invalidation price {inv_str}. {missing}."
+        elif decision == "TRIM":
+            horizon_long_term = "UNVERIFIED — Technical layer missing; risk limits require position trimming"
+            rationale = f"Position cap breach: Weight {stock_weight:.1f}% exceeds max position limit ({config.max_position_pct:.1f}%); trim required. {missing}."
+        else:
+            horizon_long_term = "UNVERIFIED — Technical layer missing"
+            rationale = f"{missing}; evaluation incomplete."
     elif data_status == "NO THESIS":
         cp_str = f"₹{current_price:.2f}" if current_price is not None else "N/A"
         horizon_short_term = f"{technical_trend} — Price {cp_str} evaluation complete"
@@ -272,6 +317,10 @@ def evaluate_signal(
             else:
                 horizon_long_term = f"INTACT — Thesis intact ({conv_str}); price {cp_str} above invalidation ({inv_str})"
                 rationale = f"Position hold: Technical trend {technical_trend}, total return {ret_str}, position weight {stock_weight:.1f}%; conviction ({conv_str}) thesis INTACT above invalidation ({inv_str})."
+
+    recommended_action = DECISION_ACTIONS.get(decision, "Hold")
+    if decision in ("ACCUMULATE", "BUY") and technical_trend == "BEARISH":
+        recommended_action = "Add on weakness (small)"
 
     if recommended_action == "Add on weakness (small)":
         conv_str = f"{int(conviction_val)}/5" if conviction_val is not None else "N/A"

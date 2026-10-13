@@ -36,6 +36,16 @@ class RiskConfig:
     atr_target_multiple: float = _float("ATR_TARGET_MULTIPLE", 4.0)
     minimum_roe: float = _float("MINIMUM_ROE", 0.10)
     overextension_multiple: float = _float("OVEREXTENSION_MULTIPLE", 1.25)
+    # Fraction of an overextended position to trim (no cap is breached, so
+    # there is no natural target weight to trim down to).
+    overextension_trim_fraction: float = _float("OVEREXTENSION_TRIM_FRACTION", 0.25)
+    # Live (Yahoo) price vs broker price in portfolio.csv: a larger gap means
+    # one of the two is wrong (bad ticker, unadjusted corporate action, stale
+    # CSV), so the row is flagged instead of acted on.
+    price_mismatch_pct: float = _float("PRICE_MISMATCH_PCT", 25.0)
+    # Price / 200 DMA outside [1/x, x] cannot happen through normal trading and
+    # indicates a broken price history.
+    max_price_to_dma_ratio: float = _float("MAX_PRICE_TO_DMA_RATIO", 2.5)
 
 
 RISK_CONFIG = RiskConfig()

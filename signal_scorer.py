@@ -7,7 +7,7 @@ import yfinance as yf
 
 from analysis import TICKER_MAP
 
-FAILURE_TRENDS = {"NO_DATA", "FETCH_ERROR", "NO_TICKER"}
+FAILURE_TRENDS = {"NO_DATA", "FETCH_ERROR", "NO_TICKER", "BAD_DATA"}
 
 
 def load_price_history(symbol: str) -> pd.DataFrame:

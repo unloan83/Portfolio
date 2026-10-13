@@ -109,7 +109,8 @@ def test_signal_no_thesis():
     )
     assert res.signal == "⚠️ NO THESIS"
     assert res.thesis_status == "NOT SET"
-    assert res.recommended_action == "Hold"
+    assert res.decision == "NO THESIS"
+    assert res.recommended_action == "Set thesis in thesis.csv"
 
 
 def test_signal_thesis_invalidated():
@@ -152,7 +153,9 @@ def test_signal_bearish_negative_return():
     )
     assert res.signal == "🔴 STRG SELL"
     assert res.explanation == "breakdown + thesis stress"
-    assert res.recommended_action == "Hold"
+    # SELL decision must never be paired with a "Hold" action.
+    assert res.decision == "SELL"
+    assert res.recommended_action == "Exit"
 
 
 def test_signal_thesis_nan_and_unset_handling():
@@ -197,3 +200,93 @@ def test_signal_thesis_intact_and_invalidated_matrix():
     assert res_inv.recommended_action == "Exit"
 
 
+
+
+def test_no_data_uses_broker_price_for_thesis_invalidation():
+    res = evaluate_signal(
+        current_price=None,
+        dma_50=None,
+        dma_200=None,
+        technical_trend_override="NO_DATA",
+        thesis_text="Index exposure",
+        conviction=4.0,
+        invalidation_price=240.0,
+        fallback_price=230.0,
+    )
+    assert res.signal == "⚪ NO DATA"
+    assert res.thesis_status == "INVALIDATED"
+    assert res.decision == "SELL"
+    assert res.recommended_action == "Exit"
+    assert "Broker price ₹230.00" in res.rationale
+
+
+def test_no_data_without_breach_stays_no_data():
+    res = evaluate_signal(
+        current_price=None,
+        dma_50=None,
+        dma_200=None,
+        technical_trend_override="NO_DATA",
+        thesis_text="Index exposure",
+        conviction=4.0,
+        invalidation_price=200.0,
+        fallback_price=266.0,
+    )
+    assert res.decision == "NO DATA"
+    assert res.recommended_action == "Verify price manually"
+
+
+def test_no_data_still_trims_position_cap_breach():
+    res = evaluate_signal(
+        current_price=None,
+        dma_50=None,
+        dma_200=None,
+        technical_trend_override="FETCH_ERROR",
+        thesis_text="Core holding",
+        conviction=5.0,
+        invalidation_price=100.0,
+        fallback_price=500.0,
+        stock_weight=12.0,
+    )
+    assert res.decision == "TRIM"
+    assert res.recommended_action == "Trim"
+
+
+def test_data_issue_blocks_trade_on_suspect_price():
+    # Live price looks like a breakdown, but it failed the sanity check.
+    res = evaluate_signal(
+        current_price=237.0,
+        dma_50=300.0,
+        dma_200=334.0,
+        total_return=-49.0,
+        thesis_text="City gas franchise",
+        conviction=3.0,
+        invalidation_price=200.0,
+        fallback_price=401.0,
+        data_issue="Live price differs from broker price.",
+    )
+    assert res.technical_trend == "BAD_DATA"
+    assert res.data_status == "BAD DATA"
+    assert res.thesis_status == "INTACT"  # judged on the broker price
+    assert res.decision == "VERIFY DATA"
+    assert res.recommended_action == "Verify price data before acting"
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        dict(current_price=80.0, dma_50=95.0, dma_200=100.0, total_return=-20.0, conviction=4.0, invalidation_price=85.0),
+        dict(current_price=90.0, dma_50=95.0, dma_200=100.0, total_return=-5.0, conviction=3.0, invalidation_price=50.0),
+        dict(current_price=110.0, dma_50=105.0, dma_200=100.0, total_return=10.0, conviction=5.0, invalidation_price=50.0, stock_weight=14.0),
+        dict(current_price=90.0, dma_50=95.0, dma_200=100.0, total_return=40.0, conviction=4.0, invalidation_price=50.0, stock_weight=2.0),
+        dict(current_price=110.0, dma_50=105.0, dma_200=100.0, roe=0.2, total_return=10.0, conviction=4.0, invalidation_price=50.0, stock_weight=2.0),
+    ],
+)
+def test_recommended_action_always_matches_decision(kwargs):
+    res = evaluate_signal(thesis_text="Thesis", **kwargs)
+    expected = {
+        "SELL": {"Exit"},
+        "TRIM": {"Trim"},
+        "ACCUMULATE": {"Accumulate", "Add on weakness (small)"},
+        "HOLD": {"Hold"},
+    }[res.decision]
+    assert res.recommended_action in expected

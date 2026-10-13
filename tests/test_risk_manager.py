@@ -72,3 +72,21 @@ def test_sector_cap_blocks_when_no_room_remains():
     result = manager.size_position("NEWSTK", 100.0, 1.0, "tech")
     assert not result.approved
     assert "sector" in result.reason.lower()
+
+
+def test_sizing_counts_existing_position_against_cap():
+    from risk_manager import RiskManager as RM
+    portfolio = Portfolio(cash=0, holdings={"AAA": Holding("AAA", 70, 100, "Tech")})
+    portfolio.holdings["BBB"] = Holding("BBB", 930, 100, "Other")
+    # Equity 100k, cap 8% = 8k; AAA already holds 7k, so only 10 shares of room.
+    result = RM(portfolio).size_position("AAA", 100, 1, "Tech", current_position_value=7000)
+    assert result.approved
+    assert result.quantity == 10
+
+
+def test_trim_quantity_reaches_target_weight():
+    from risk_manager import trim_quantity
+    # 149 sh @ 100 = 14.9k of 100k; cap 8% -> sell 69 sh.
+    assert trim_quantity(149, 100.0, 100_000.0, 8.0) == 69
+    assert trim_quantity(10, 100.0, 100_000.0, 8.0) == 0
+    assert trim_quantity(10, 100.0, 1_000.0, 0.0) == 10

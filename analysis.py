@@ -1,13 +1,18 @@
+import math
 import os
 import re
 import html
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Mapping, Optional
 from zoneinfo import ZoneInfo
 import pandas as pd
 import yfinance as yf
 
-from config import RISK_CONFIG
-from signal_engine import evaluate_signal
+from config import RISK_CONFIG, RiskConfig
+from indicators import atr as compute_atr
+from risk_manager import RiskManager, trim_quantity
+from signal_engine import DATA_FAILURE_TRENDS, evaluate_signal
 
 # Fully vetted Exchange Tickers mapping
 TICKER_MAP = {
@@ -19,7 +24,7 @@ TICKER_MAP = {
     'DRREDD': 'DRREDDY.NS', 'SEQSCI': 'VIYASH.NS', 'JSWENE': 'JSWENERGY.NS',
     'NHPC': 'NHPC.NS', 'NTPC': 'NTPC.NS', 'NTPGRE': 'NTPCGREEN.NS',
     'SJVLIM': 'SJVN.NS', 'TATPOW': 'TATAPOWER.NS', 'GAIL': 'GAIL.NS',
-    'GUJGA': 'GUJENERGY.NS', 'HINPET': 'HINDPETRO.NS', 'ONGC': 'ONGC.NS',
+    'GUJGA': 'GUJGASLTD.NS', 'HINPET': 'HINDPETRO.NS', 'ONGC': 'ONGC.NS',
     'PETLNG': 'PETRONET.NS', 'RELIND': 'RELIANCE.NS', 'GUJPPL': 'GPPL.NS',
     'IDECEL': 'IDEA.NS', 'TATCAP': 'TATACAP.NS', 'LGELEC': 'LGEINDIA.NS'
 }
@@ -35,6 +40,162 @@ SECTOR_MAP = {
     'GAIL': 'Oil & Gas', 'GUJGA': 'Oil & Gas', 'HINPET': 'Oil & Gas', 'ONGC': 'Oil & Gas', 'PETLNG': 'Oil & Gas', 'RELIND': 'Oil & Gas',
     'IDECEL': 'Telecom'
 }
+
+# NSE price bands cap a single session's move far below 2.5x, so a bigger
+# day-over-day jump in Yahoo history is an unadjusted split/bonus/consolidation.
+SPLIT_JUMP_RATIO = 2.5
+
+
+def adjust_unadjusted_splits(history: pd.DataFrame) -> pd.DataFrame:
+    """Rescale bars before any implausible one-day jump onto the latest basis."""
+    if history.empty or "Close" not in history.columns:
+        return history
+    adjusted = history.copy()
+    price_cols = [c for c in ("Open", "High", "Low", "Close") if c in adjusted.columns]
+    close = adjusted["Close"]
+    ratios = close / close.shift(1)
+    jumps = ratios[(ratios > SPLIT_JUMP_RATIO) | (ratios < 1 / SPLIT_JUMP_RATIO)].dropna()
+    for jump_label, ratio in jumps.items():
+        position = adjusted.index.get_loc(jump_label)
+        adjusted.iloc[:position, [adjusted.columns.get_loc(c) for c in price_cols]] *= ratio
+    return adjusted
+
+
+def fetch_market_data(yf_ticker: str) -> dict:
+    """Price, 50/200 DMA, 14-day ATR and ROE for one ticker; failures are tagged."""
+    result = {"price": None, "dma_50": None, "dma_200": None, "atr": None, "roe": None, "trend_override": None}
+    if yf_ticker in ('UNLISTED', 'TODO_VERIFY'):
+        result["trend_override"] = "NO_TICKER"
+        return result
+    try:
+        ticker_obj = yf.Ticker(yf_ticker)
+
+        # Fundamental Agent
+        info = ticker_obj.info or {}
+        result["roe"] = info.get('returnOnEquity')
+
+        # Momentum Agent
+        data = ticker_obj.history(period="1y")
+        if data.empty or "Close" not in data.columns:
+            result["trend_override"] = "NO_DATA"
+            return result
+        data = adjust_unadjusted_splits(data[data["Close"].notna()])
+        clean_close = data["Close"]
+        if len(clean_close) < 200:
+            result["trend_override"] = "NO_DATA"
+            return result
+        result["price"] = float(clean_close.iloc[-1])
+        result["dma_50"] = float(clean_close.rolling(window=50).mean().iloc[-1])
+        result["dma_200"] = float(clean_close.rolling(window=200).mean().iloc[-1])
+        if {"High", "Low"}.issubset(data.columns):
+            atr_series = compute_atr(data.rename(columns={"High": "high", "Low": "low", "Close": "close"}))
+            if not atr_series.empty and pd.notna(atr_series.iloc[-1]):
+                result["atr"] = float(atr_series.iloc[-1])
+    except Exception as exc:
+        result["trend_override"] = "FETCH_ERROR"
+        print(f"[warn] ({yf_ticker}) {type(exc).__name__}: {exc}")
+    return result
+
+
+def price_data_issue(
+    live_price: Optional[float],
+    dma_200: Optional[float],
+    broker_price: Optional[float],
+    config: RiskConfig = RISK_CONFIG,
+) -> Optional[str]:
+    """Why the fetched price can't be trusted, or None if it passes the checks."""
+    if live_price is None or live_price <= 0:
+        return None
+    if broker_price is not None and pd.notna(broker_price) and broker_price > 0:
+        gap_pct = (live_price / broker_price - 1) * 100
+        if abs(gap_pct) > config.price_mismatch_pct:
+            return (
+                f"Live price ₹{live_price:.2f} differs from broker price ₹{broker_price:.2f} "
+                f"by {gap_pct:+.1f}% (limit ±{config.price_mismatch_pct:.0f}%); check ticker or corporate action."
+            )
+    if dma_200 is not None and dma_200 > 0:
+        ratio = live_price / dma_200
+        limit = config.max_price_to_dma_ratio
+        if ratio > limit or ratio < 1 / limit:
+            return (
+                f"Price ₹{live_price:.2f} is {ratio:.2f}x its 200 DMA ₹{dma_200:.2f}; "
+                "price history looks broken (ticker or unadjusted corporate action)."
+            )
+    return None
+
+
+@dataclass
+class _Holding:
+    asset_type: str
+    market_value: float
+
+
+@dataclass
+class _PortfolioView:
+    """Read-only portfolio snapshot satisfying risk_manager.PortfolioLike."""
+    holdings: Mapping[str, _Holding]
+    sector_weights: Mapping[str, float]
+    equity: float
+
+    @property
+    def total_equity(self) -> float:
+        return self.equity
+
+    def exposure_by_sector(self) -> dict[str, float]:
+        return dict(self.sector_weights)
+
+
+def size_action(
+    eval_res,
+    qty: float,
+    price: float,
+    total_value: float,
+    stock_weight: float,
+    sector: str,
+    sector_weight: float,
+    atr_value: Optional[float],
+    risk_manager: RiskManager,
+    symbol: str,
+    config: RiskConfig = RISK_CONFIG,
+) -> str:
+    """Turn the decision's action into share counts the user can execute."""
+    action = eval_res.recommended_action
+    decision = eval_res.decision
+
+    if decision == "TRIM":
+        shares = trim_quantity(qty, price, total_value, config.max_position_pct)
+        if sector_weight > config.max_sector_pct:
+            target_weight = max(0.0, stock_weight - (sector_weight - config.max_sector_pct))
+            shares = max(shares, trim_quantity(qty, price, total_value, target_weight))
+        if eval_res.is_overextended:
+            shares = max(shares, math.ceil(qty * config.overextension_trim_fraction))
+        shares = int(min(shares, qty))
+        if shares <= 0:
+            return action
+        new_weight = (qty - shares) * price / total_value * 100
+        return f"Trim {shares} sh (~₹{shares * price:,.0f}) → {new_weight:.1f}% weight"
+
+    if decision == "SELL":
+        return f"Exit all {int(qty)} sh (~₹{qty * price:,.0f})"
+
+    if decision in ("ACCUMULATE", "BUY"):
+        if atr_value is None or atr_value <= 0:
+            return f"{action} — size manually (ATR unavailable)"
+        sizing = risk_manager.size_position(
+            symbol, price, atr_value, sector, current_position_value=qty * price
+        )
+        if not sizing.approved:
+            return f"{action} — no size: {sizing.reason}"
+        shares = sizing.quantity
+        if action == "Add on weakness (small)":
+            shares = max(1, shares // 2)
+        return (
+            f"{action}: buy {shares} sh (~₹{shares * price:,.0f}), "
+            f"stop ₹{sizing.stop_price:.2f}, target ₹{sizing.target_price:.2f}"
+        )
+
+    return action
+
 
 def send_telegram_notification(summary_msg: str) -> bool:
     """
@@ -161,13 +322,45 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     run_type = os.environ.get("RUN_TYPE", "incremental").strip().lower()
     is_full_review = (run_type == "full")
 
-    # --- AGENT 1: RISK & ALLOCATION PRE-COMPUTATION ---
-    df['Sector'] = df['Stock Symbol'].str.strip().map(SECTOR_MAP).fillna('Other ETFs/Misc')
-    df['Current_Value'] = df['Qty'] * df['Current Market Price']
+    # --- AGENT 1: MARKET DATA + PRICE SANITY CHECKS ---
+    df['Stock Symbol'] = df['Stock Symbol'].astype(str).str.strip()
+    market = {}
+    for _, row in df.iterrows():
+        broker_symbol = row["Stock Symbol"]
+        md = fetch_market_data(TICKER_MAP.get(broker_symbol, f"{broker_symbol}.NS"))
+        md["issue"] = None
+        if md["trend_override"] is None:
+            md["issue"] = price_data_issue(md["price"], md["dma_200"], row["Current Market Price"])
+            if md["issue"]:
+                print(f"[warn] {broker_symbol}: {md['issue']}")
+        market[broker_symbol] = md
+
+    # --- AGENT 2: RISK & ALLOCATION PRE-COMPUTATION ---
+    # Weights use the same price the decision uses: the live price when it is
+    # trustworthy, otherwise the broker price from portfolio.csv.
+    def _valuation_price(row):
+        md = market[row["Stock Symbol"]]
+        if md["trend_override"] is None and md["issue"] is None and md["price"] is not None:
+            return md["price"]
+        return row["Current Market Price"]
+
+    df['Sector'] = df['Stock Symbol'].map(SECTOR_MAP).fillna('Other ETFs/Misc')
+    df['Valuation_Price'] = df.apply(_valuation_price, axis=1)
+    df['Current_Value'] = df['Qty'] * df['Valuation_Price']
     total_portfolio_value = df['Current_Value'].sum()
     df['Weight_%'] = (df['Current_Value'] / total_portfolio_value) * 100
-    
+
     sector_allocations = df.groupby('Sector')['Weight_%'].sum().to_dict()
+    risk_manager = RiskManager(
+        _PortfolioView(
+            holdings={
+                r["Stock Symbol"]: _Holding("equity", r["Current_Value"]) for _, r in df.iterrows()
+            },
+            sector_weights=sector_allocations,
+            equity=total_portfolio_value,
+        ),
+        RISK_CONFIG,
+    )
 
     analysis_results = []
     tracking_rows = []
@@ -177,51 +370,24 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     run_timestamp_ist = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
 
     for _, row in df.iterrows():
-        broker_symbol = str(row["Stock Symbol"]).strip()
-        company_name = row["Company Name"]
+        broker_symbol = row["Stock Symbol"]
         qty = row["Qty"]
         avg_cost = row["Average Cost Price"]
         csv_current_price = row["Current Market Price"]
+        valuation_price = row["Valuation_Price"]
         stock_weight = row["Weight_%"]
         stock_sector = row["Sector"]
 
-        yf_ticker = TICKER_MAP.get(broker_symbol, f"{broker_symbol}.NS")
-        current_price = None
-        dma_50 = None
-        dma_200 = None
-        roe = None
-        technical_trend_override = None
-
-        if yf_ticker not in ('UNLISTED', 'TODO_VERIFY'):
-            try:
-                ticker_obj = yf.Ticker(yf_ticker)
-
-                # Fundamental Agent
-                info = ticker_obj.info or {}
-                roe = info.get('returnOnEquity')
-
-                # Momentum Agent
-                data = ticker_obj.history(period="1y")
-                clean_close = data["Close"].dropna() if not data.empty and "Close" in data.columns else pd.Series(dtype=float)
-                if not clean_close.empty and len(clean_close) >= 200:
-                    current_price = float(clean_close.iloc[-1])
-                    dma_50 = float(clean_close.rolling(window=50).mean().iloc[-1])
-                    dma_200 = float(clean_close.rolling(window=200).mean().iloc[-1])
-                else:
-                    technical_trend_override = "NO_DATA"
-            except Exception as exc:
-                technical_trend_override = "FETCH_ERROR"
-                print(
-                    f"[warn] {broker_symbol} ({yf_ticker}) "
-                    f"{type(exc).__name__}: {exc}"
-                )
-        else:
-            technical_trend_override = "NO_TICKER"
+        md = market[broker_symbol]
+        current_price = md["price"]
+        dma_50 = md["dma_50"]
+        dma_200 = md["dma_200"]
+        roe = md["roe"]
+        technical_trend_override = md["trend_override"]
 
         # --- EXECUTIVE COORDINATOR ENGINE ---
         sector_risk_exposure = sector_allocations.get(stock_sector, 0)
-        display_price = current_price if current_price is not None else csv_current_price
-        total_return = ((display_price - avg_cost) / avg_cost) * 100
+        total_return = ((valuation_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
         t_info = thesis_dict.get(broker_symbol, {})
@@ -264,9 +430,22 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             invalidation_price=inv_price_val,
             stock_weight=stock_weight,
             config=RISK_CONFIG,
+            fallback_price=csv_current_price,
+            data_issue=md["issue"],
         )
         signal = eval_res.signal
-        recommended_action = eval_res.recommended_action
+        recommended_action = size_action(
+            eval_res,
+            qty=qty,
+            price=valuation_price,
+            total_value=total_portfolio_value,
+            stock_weight=stock_weight,
+            sector=stock_sector,
+            sector_weight=sector_risk_exposure,
+            atr_value=md["atr"],
+            risk_manager=risk_manager,
+            symbol=broker_symbol,
+        )
         explanation = eval_res.explanation
         thesis_status = eval_res.thesis_status
         conviction_disp = str(int(eval_res.conviction)) if eval_res.conviction is not None else ""
@@ -279,20 +458,20 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
 
         # Save to Main Display DataFrame
         analysis_results.append({
+            "_weight": stock_weight,
             "Symbol": broker_symbol,
             "Sector": stock_sector,
             "Weight": f"{stock_weight:.1f}%",
             "Total Return": f"{total_return:+.2f}%",
             "Decision": decision,
-            "Signal": signal,
-            "Recommended Action": recommended_action,
+            "Action": recommended_action,
             "Reasoning": rationale,
             "Thesis Status": thesis_status,
             "Conviction": conviction_disp
         })
 
         # --- LOG TO HISTORY TRACKING ARRAY ---
-        if technical_trend in ("NO_DATA", "FETCH_ERROR", "NO_TICKER"):
+        if technical_trend in DATA_FAILURE_TRENDS:
             log_price = None
             log_dma_50 = None
             log_dma_200 = None
@@ -343,7 +522,8 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
                 "TRIM": "✂️",
                 "SELL": "🔴",
                 "NO THESIS": "⚠️",
-                "NO DATA": "⚪"
+                "NO DATA": "⚪",
+                "VERIFY DATA": "⚪",
             }
             dec_emoji = emoji_map.get(decision, "📊")
             safe_dec = html.escape(str(decision))
@@ -351,8 +531,10 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             safe_short = html.escape(str(horizon_short_term))
             safe_long = html.escape(str(horizon_long_term))
             safe_rat = html.escape(str(rationale))
+            safe_act = html.escape(str(recommended_action))
             telegram_lines.append(
                 f"{dec_emoji} <b>{safe_dec}</b> | <b>{safe_sym}</b> ({stock_weight:.1f}%) | {return_emoji}{total_return:+.1f}%\n"
+                f"• Action: {safe_act}\n"
                 f"• Short: {safe_short}\n"
                 f"• Long: {safe_long}\n"
                 f"• Rationale: {safe_rat}"
@@ -372,7 +554,11 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         new_log_df.to_csv(tracking_file, mode='w', index=False, header=True)
 
     # Output rendering logs
-    report_df = pd.DataFrame(analysis_results).sort_values(by="Weight", ascending=False)
+    report_df = (
+        pd.DataFrame(analysis_results)
+        .sort_values(by="_weight", ascending=False)
+        .drop(columns="_weight")
+    )
     sector_summary_md = "\n### Sector Concentration Metrics\n"
     for sec, w in sorted(sector_allocations.items(), key=lambda x: x[1], reverse=True):
         sector_summary_md += f"* **{sec}**: {w:.1f}%\n"
