@@ -764,6 +764,70 @@ def test_tax_plan_in_readme(tmp_path, monkeypatch):
     assert "config.py" in readme
 
 
+def test_backtest_engine_simulation_and_report(tmp_path):
+    import backtest_engine
+
+    # Generate 60 weeks of synthetic data
+    dates = pd.date_range("2021-01-01", periods=60, freq="W-FRI")
+
+    # Stock A (uptrend)
+    prices_a = [100.0 * (1.01 ** i) for i in range(60)]
+    df_a = pd.DataFrame({
+        "Open": prices_a,
+        "High": [p * 1.02 for p in prices_a],
+        "Low": [p * 0.98 for p in prices_a],
+        "Close": prices_a,
+        "Volume": [1000] * 60,
+    }, index=dates)
+
+    # Stock B (downtrend)
+    prices_b = [100.0 * (0.99 ** i) for i in range(60)]
+    df_b = pd.DataFrame({
+        "Open": prices_b,
+        "High": [p * 1.02 for p in prices_b],
+        "Low": [p * 0.98 for p in prices_b],
+        "Close": prices_b,
+        "Volume": [1000] * 60,
+    }, index=dates)
+
+    weekly_data = {"STKA": df_a, "STKB": df_b}
+
+    # Benchmark (^NSEI)
+    bench_df = pd.DataFrame({
+        "Close": [15000.0 * (1.005 ** i) for i in range(60)],
+    }, index=dates)
+
+    thesis_dict = {
+        "STKA": {"conviction": 5, "invalidation_price": 80.0, "thesis": "Growth"},
+        "STKB": {"conviction": 2, "invalidation_price": 90.0, "thesis": "Value"},
+    }
+
+    res = backtest_engine.run_5y_decision_engine_backtest(
+        weekly_data=weekly_data,
+        benchmark_weekly=bench_df,
+        thesis_dict=thesis_dict,
+        initial_capital=100000.0,
+        fee_rate=0.002,
+    )
+
+    assert "engine_metrics" in res
+    assert "bnh_metrics" in res
+    assert "nifty_metrics" in res
+    assert res["engine_metrics"]["Start_Value"] > 0
+    assert res["engine_metrics"]["End_Value"] > 0
+    assert isinstance(res["engine_metrics"]["CAGR"], float)
+    assert isinstance(res["engine_metrics"]["Max_Drawdown"], float)
+    assert isinstance(res["engine_metrics"]["Turnover_Pct"], float)
+
+    out_file = str(tmp_path / "test_backtest_summary.md")
+    report = backtest_engine.generate_backtest_summary_report(res, output_path=out_file)
+    assert "Multi-Agent Decision Engine: 5-Year Walk-Forward Backtest Summary" in report
+    assert "Decision Engine (evaluate_signal)" in report
+    assert "Buy-and-Hold" in report
+    assert "Benchmark: Nifty 50" in report
+    assert (tmp_path / "test_backtest_summary.md").exists()
+
+
 
 
 
