@@ -522,3 +522,92 @@ def test_performance_section_in_readme(tmp_path, monkeypatch):
     assert perf_idx < health_idx
 
 
+def test_risk_groups_config():
+    from config import RISK_CONFIG, RISK_GROUPS
+
+    assert RISK_CONFIG.max_risk_group_pct == 25.0
+    assert "Energy & Power" in RISK_GROUPS
+    assert "State-owned (PSU)" in RISK_GROUPS
+    assert "Financials" in RISK_GROUPS
+    assert "Precious metals" in RISK_GROUPS
+
+    psu_expected = [
+        "ONGC", "GAIL", "HINPET", "PETLNG", "NTPC", "NHPC",
+        "SJVLIM", "NTPGRE", "LIC", "BHAELE", "ENGIND", "GUJGA"
+    ]
+    for p in psu_expected:
+        assert p in RISK_GROUPS["State-owned (PSU)"]
+
+    assert "ICIGOL" in RISK_GROUPS["Precious metals"]
+    assert "ICIPSE" in RISK_GROUPS["Precious metals"]
+
+
+def test_risk_group_cap_triggers_trim():
+    from config import RiskConfig
+    from signal_engine import evaluate_signal
+
+    # Stock has 4.5% weight (>= max_pos/2 = 4.0%), risk group exposure is 28% (> 25% cap)
+    res = evaluate_signal(
+        current_price=100.0,
+        dma_50=95.0,
+        dma_200=90.0,
+        roe=0.15,
+        invalidation_price=80.0,
+        stock_weight=4.5,
+        sector_risk_exposure=15.0,
+        risk_group_exposure=28.0,
+        config=RiskConfig(max_risk_group_pct=25.0),
+    )
+    assert res.decision == "TRIM"
+    assert "Risk group cap breach" in res.rationale
+
+
+def test_lookthrough_effective_weights():
+    import lookthrough
+
+    port = pd.DataFrame([
+        {"Stock Symbol": "HDFBAN", "Weight_%": 15.0},
+        {"Stock Symbol": "ICINIF", "Weight_%": 4.0},
+        {"Stock Symbol": "KOTAKBKETF", "Weight_%": 2.0},
+    ])
+    mock_etf = {
+        "etfs": {
+            "ICINIF": {
+                "top_10": [{"symbol": "HDFBAN", "weight_pct": 10.0}]  # 4.0% * 10% = 0.4%
+            },
+            "KOTAKBKETF": {
+                "top_10": [{"symbol": "HDFBAN", "weight_pct": 25.0}]  # 2.0% * 25% = 0.5%
+            }
+        }
+    }
+    eff = lookthrough.calculate_effective_weights(port, mock_etf).set_index("Symbol")
+    # HDFBAN effective weight = 15.0 + 0.4 + 0.5 = 15.9%
+    assert abs(eff.loc["HDFBAN", "Effective_Weight"] - 15.9) < 0.01
+
+
+def test_lookthrough_and_risk_groups_in_readme(tmp_path, monkeypatch):
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "ONGC", "Company Name": "ONGC", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 100},
+        {"Stock Symbol": "BASE", "Company Name": "Base", "Qty": 900, "Average Cost Price": 100, "Current Market Price": 100},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": s, "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+        for s in ("ONGC", "BASE")
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "ONGC", "ONGC.NS")
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "ONGC", "Oil & Gas")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Risk Factor Groups Concentration" in readme
+    assert "### ETF Look-Through Effective Exposure" in readme
+
+
+

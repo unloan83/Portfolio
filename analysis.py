@@ -9,10 +9,11 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import yfinance as yf
 
-from config import RISK_CONFIG, RiskConfig
+from config import RISK_CONFIG, RISK_GROUPS, RiskConfig
 from indicators import atr as compute_atr
 from risk_manager import RiskManager, trim_quantity
 from signal_engine import DATA_FAILURE_TRENDS, evaluate_signal
+import lookthrough
 
 # Fully vetted Exchange Tickers mapping
 TICKER_MAP = {
@@ -362,6 +363,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
 
     sector_allocations = df.groupby('Sector')['Weight_%'].sum().to_dict()
     financials_total = sum(sector_allocations.get(s, 0.0) for s in FINANCIALS_SECTORS)
+    risk_group_exposures = lookthrough.calculate_risk_group_exposures(df, RISK_GROUPS)
     risk_manager = RiskManager(
         _PortfolioView(
             holdings={
@@ -401,6 +403,9 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             sector_risk_exposure = financials_total
         else:
             sector_risk_exposure = sector_allocations.get(stock_sector, 0)
+
+        sym_rgs = [g for g, mems in RISK_GROUPS.items() if broker_symbol in mems]
+        stock_rg_exposure = max([risk_group_exposures[g]["exposure_pct"] for g in sym_rgs], default=0.0)
         total_return = ((valuation_price - avg_cost) / avg_cost) * 100
         return_emoji = "📈" if total_return >= 0 else "📉"
 
@@ -448,6 +453,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             data_issue=md["issue"],
             high_52w=md.get("high_52w"),
             atr=md.get("atr"),
+            risk_group_exposure=stock_rg_exposure,
         )
         signal = eval_res.signal
         recommended_action = size_action(
@@ -647,13 +653,23 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         except Exception as exc:
             print(f"[warn] Performance computation failed: {exc}")
 
+    # --- ETF LOOK-THROUGH & RISK FACTOR GROUPS ---
+    try:
+        effective_df = lookthrough.calculate_effective_weights(df)
+        lookthrough_md = lookthrough.format_lookthrough_and_risk_groups_markdown(effective_df, risk_group_exposures)
+    except Exception as exc:
+        print(f"[warn] Look-through computation failed: {exc}")
+        lookthrough_md = ""
+
     markdown_output = (
         f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n"
         + perf_md
         + f"### Asset Health Assessment\n{report_df.to_markdown(index=False)}\n"
         + sector_summary_md
+        + lookthrough_md
         + consolidation_md
     )
+
 
 
     with open("README.md", "w") as f:

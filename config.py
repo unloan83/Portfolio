@@ -48,7 +48,28 @@ class RiskConfig:
     max_price_to_dma_ratio: float = _float("MAX_PRICE_TO_DMA_RATIO", 2.5)
     # Trailing stop distance from 52-week high in multiples of ATR (default 3x ATR).
     trailing_stop_atr_multiple: float = _float("TRAILING_STOP_ATR_MULTIPLE", 3.0)
+    # Maximum risk factor group cap (default 25%)
+    max_risk_group_pct: float = _float("MAX_RISK_GROUP_PCT", 25.0)
 
 
 RISK_CONFIG = RiskConfig()
+
+# Predefined Risk Factor Groups mapping symbols to thematic/structural risk buckets
+RISK_GROUPS: dict[str, list[str]] = {
+    "Energy & Power": [
+        "TATPOW", "NTPC", "NHPC", "SJVLIM", "NTPGRE", "JSWENE",
+        "ONGC", "GAIL", "HINPET", "PETLNG", "RELIND", "GUJGA"
+    ],
+    "State-owned (PSU)": [
+        "ONGC", "GAIL", "HINPET", "PETLNG", "NTPC", "NHPC",
+        "SJVLIM", "NTPGRE", "LIC", "BHAELE", "ENGIND", "GUJGA"
+    ],
+    "Financials": [
+        "FEDBAN", "HDFBAN", "KOTAKBKETF", "JIOFIN", "TATCAP", "LIC"
+    ],
+    "Precious metals": [
+        "ICIGOL", "ICIPSE"
+    ],
+}
+
 

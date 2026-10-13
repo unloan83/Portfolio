@@ -95,6 +95,7 @@ def evaluate_signal(
     data_issue: Optional[str] = None,
     high_52w: Optional[float] = None,
     atr: Optional[float] = None,
+    risk_group_exposure: float = 0.0,
 ) -> SignalEvaluationResult:
     """Evaluates combined technical, thesis, and fundamental signals for a single symbol."""
     fundamental_pass = roe is None or roe >= config.minimum_roe
@@ -254,8 +255,13 @@ def evaluate_signal(
         decision = "SELL"
     elif trailing_stop_hit:
         decision = "TRIM"
-    elif is_overextended or stock_weight > config.max_position_pct or (sector_risk_exposure > config.max_sector_pct and stock_weight >= (config.max_position_pct / 2)):
-        # TRIM if overextended, position weight exceeds max cap (8%), or sector exposure > 25% for a major holding
+    elif (
+        is_overextended
+        or stock_weight > config.max_position_pct
+        or (sector_risk_exposure > config.max_sector_pct and stock_weight >= (config.max_position_pct / 2))
+        or (risk_group_exposure > config.max_risk_group_pct and stock_weight >= (config.max_position_pct / 2))
+    ):
+        # TRIM if overextended, position weight exceeds max cap (8%), or sector/risk-group exposure > 25% for a major holding
         decision = "TRIM"
     elif (
         thesis_status == "INTACT"
@@ -263,6 +269,7 @@ def evaluate_signal(
         and conviction_val >= 4.0
         and stock_weight < config.max_position_pct
         and sector_risk_exposure <= config.max_sector_pct
+        and risk_group_exposure <= config.max_risk_group_pct
         and (
             technical_trend == "BULLISH"
             or (technical_trend == "BEARISH" and total_return is not None and total_return > 25.0)
@@ -330,6 +337,8 @@ def evaluate_signal(
                 rationale = f"Position cap breach: Weight {stock_weight:.1f}% exceeds max position limit ({config.max_position_pct:.1f}%); trim required."
             elif sector_risk_exposure > config.max_sector_pct:
                 rationale = f"Sector cap breach: {stock_sector} sector exposure ({sector_risk_exposure:.1f}%) exceeds sector limit ({config.max_sector_pct:.1f}%); trim holding ({stock_weight:.1f}% weight) for concentration risk control."
+            elif risk_group_exposure > config.max_risk_group_pct:
+                rationale = f"Risk group cap breach: Risk factor group exposure ({risk_group_exposure:.1f}%) exceeds limit ({config.max_risk_group_pct:.1f}%); trim holding ({stock_weight:.1f}% weight) for risk-factor control."
             else:
                 rationale = f"Risk trim trigger: Position weight ({stock_weight:.1f}%), sector risk ({sector_risk_exposure:.1f}%), or overextension active; trim for capital protection."
         elif decision in ("ACCUMULATE", "BUY"):

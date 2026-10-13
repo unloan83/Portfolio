@@ -1,0 +1,37 @@
+{
+  "as_of_date": "2026-10-01",
+  "etfs": {
+    "ICINIF": {
+      "name": "ICICI Prudential Nifty 50 ETF",
+      "benchmark": "Nifty 50",
+      "top_10": [
+        {"symbol": "HDFBAN", "company": "HDFC Bank", "weight_pct": 11.5},
+        {"symbol": "RELIND", "company": "Reliance Industries", "weight_pct": 8.5},
+        {"symbol": "ICICIBANK", "company": "ICICI Bank", "weight_pct": 8.0},
+        {"symbol": "INFY", "company": "Infosys", "weight_pct": 5.5},
+        {"symbol": "ITC", "company": "ITC Ltd", "weight_pct": 4.0},
+        {"symbol": "TCS", "company": "Tata Consultancy Services", "weight_pct": 3.8},
+        {"symbol": "LT", "company": "Larsen & Toubro", "weight_pct": 3.8},
+        {"symbol": "BHARTIARTL", "company": "Bharti Airtel", "weight_pct": 3.5},
+        {"symbol": "AXISBANK", "company": "Axis Bank", "weight_pct": 3.2},
+        {"symbol": "SBIN", "company": "State Bank of India", "weight_pct": 3.0}
+      ]
+    },
+    "KOTAKBKETF": {
+      "name": "Kotak Nifty Bank ETF",
+      "benchmark": "Nifty Bank",
+      "top_10": [
+        {"symbol": "HDFBAN", "company": "HDFC Bank", "weight_pct": 29.0},
+        {"symbol": "ICICIBANK", "company": "ICICI Bank", "weight_pct": 24.0},
+        {"symbol": "SBIN", "company": "State Bank of India", "weight_pct": 10.0},
+        {"symbol": "AXISBANK", "company": "Axis Bank", "weight_pct": 9.5},
+        {"symbol": "KOTAKBANK", "company": "Kotak Mahindra Bank", "weight_pct": 9.0},
+        {"symbol": "INDUSINDBK", "company": "IndusInd Bank", "weight_pct": 5.5},
+        {"symbol": "FEDBAN", "company": "Federal Bank", "weight_pct": 2.5},
+        {"symbol": "BANKBARODA", "company": "Bank of Baroda", "weight_pct": 2.2},
+        {"symbol": "PNB", "company": "Punjab National Bank", "weight_pct": 1.8},
+        {"symbol": "IDFCFIRSTB", "company": "IDFC First Bank", "weight_pct": 1.5}
+      ]
+    }
+  }
+}

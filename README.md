@@ -112,6 +112,41 @@
 * **Pharma**: 1.6%
 * **Infrastructure**: 1.5%
 * **Financials (combined)**: 27.2%
+### Risk Factor Groups Concentration
+
+Portfolio exposure across macro risk buckets (Risk Cap: **25.0%**):
+
+| Risk Group        | Exposure   | Cap   | Status    | Top Constituents                                                                        |
+|:------------------|:-----------|:------|:----------|:----------------------------------------------------------------------------------------|
+| Energy & Power    | 27.8%      | 25.0% | ⚠️ BREACH | TATPOW (0.4%), NTPC (0.6%), NHPC (0.7%), SJVLIM (0.8%), NTPGRE (2.1%), +7 more          |
+| Financials        | 27.2%      | 25.0% | ⚠️ BREACH | FEDBAN (2.5%), HDFBAN (15.0%), KOTAKBKETF (0.3%), JIOFIN (1.9%), TATCAP (2.4%), +1 more |
+| State-owned (PSU) | 20.0%      | 25.0% | OK        | ONGC (1.4%), GAIL (1.7%), HINPET (0.7%), PETLNG (0.7%), NTPC (0.6%), +7 more            |
+| Precious metals   | 11.8%      | 25.0% | OK        | ICIGOL (5.1%), ICIPSE (6.7%)                                                            |
+
+### ETF Look-Through Effective Exposure
+
+Combined direct stock holdings plus indirect exposure via Nifty 50 (`ICINIF`) and Nifty Bank (`KOTAKBKETF`) index ETFs:
+
+| Symbol   | Direct Weight   | Effective Weight   | Indirect Source                          |
+|:---------|:----------------|:-------------------|:-----------------------------------------|
+| HDFBAN   | 15.0%           | 15.45%             | +0.41% via ICINIF, +0.08% via KOTAKBKETF |
+| RELIND   | 14.3%           | 14.59%             | +0.30% via ICINIF                        |
+| ICIPSE   | 6.7%            | 6.74%              | Direct only                              |
+| WIPRO    | 6.0%            | 5.99%              | Direct only                              |
+| LIC      | 5.1%            | 5.08%              | Direct only                              |
+| ICIGOL   | 5.1%            | 5.05%              | Direct only                              |
+| BHAELE   | 4.9%            | 4.90%              | Direct only                              |
+| TATGLO   | 4.6%            | 4.64%              | Direct only                              |
+| JSWENE   | 4.0%            | 4.01%              | Direct only                              |
+| LGELEC   | 3.7%            | 3.68%              | Direct only                              |
+| ICINIF   | 3.6%            | 3.55%              | Direct only                              |
+| IDECEL   | 3.1%            | 3.09%              | Direct only                              |
+| FEDBAN   | 2.5%            | 2.56%              | +0.01% via KOTAKBKETF                    |
+| ASHLEY   | 2.5%            | 2.52%              | Direct only                              |
+| TATCAP   | 2.4%            | 2.43%              | Direct only                              |
+
+*Showing top 15 of 47 holdings by effective weight.*
+
 
 ### Portfolio Consolidation
 Portfolio holds 34 positions versus target maximum of 15 (`config.max_open_positions`). The following 13 holdings are under 1.0% portfolio weight with conviction below 5 and are candidates for consolidation/exit:
