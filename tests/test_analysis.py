@@ -610,4 +610,78 @@ def test_lookthrough_and_risk_groups_in_readme(tmp_path, monkeypatch):
     assert "### ETF Look-Through Effective Exposure" in readme
 
 
+def test_core_satellite_classification():
+    import core_satellite
+
+    assert core_satellite.classify_holding("ICINIF") == "Core"
+    assert core_satellite.classify_holding("HDF250") == "Core"
+    assert core_satellite.classify_holding("MIR150") == "Core"
+    assert core_satellite.classify_holding("HDFBAN") == "Satellite"
+    assert core_satellite.classify_holding("KOTAKBKETF") == "Satellite"
+    assert core_satellite.classify_holding("ICIGOL") == "Satellite"
+
+
+def test_core_satellite_calculation_and_ranking():
+    from config import RiskConfig
+    import core_satellite
+
+    port = pd.DataFrame([
+        {"Stock Symbol": "ICINIF", "Qty": 10, "Current Market Price": 250, "Weight_%": 25.0},
+        {"Stock Symbol": "HDFBAN", "Qty": 10, "Current Market Price": 700, "Weight_%": 40.0},
+        {"Stock Symbol": "FEDBAN", "Qty": 10, "Current Market Price": 300, "Weight_%": 20.0},
+        {"Stock Symbol": "TINY", "Qty": 10, "Current Market Price": 50, "Weight_%": 0.5},
+    ])
+    thesis = {
+        "HDFBAN": {"conviction": "5/5"},
+        "FEDBAN": {"conviction": "4/5"},
+        "TINY": {"conviction": "2/5"},
+        "ICINIF": {"conviction": "4/5"},
+    }
+    cfg = RiskConfig(target_core_pct=50.0, target_satellite_count=15)
+    res = core_satellite.calculate_core_satellite_view(port, thesis, cfg)
+
+    assert res["core_weight"] == 25.0
+    assert res["satellite_weight"] == 60.5
+    assert res["core_count"] == 1
+    assert res["satellite_count"] == 3
+
+    # Check ranking: HDFBAN (conv 5, wt 40), then FEDBAN (conv 4, wt 20), then TINY (conv 2, wt 0.5)
+    sat = res["satellite_holdings"]
+    assert sat[0]["Symbol"] == "HDFBAN"
+    assert sat[1]["Symbol"] == "FEDBAN"
+    assert sat[2]["Symbol"] == "TINY"
+
+    # TINY should be flagged to consolidate (conviction 2 < 4)
+    assert sat[2]["Consolidate"] is True
+    assert "Consolidate" in sat[2]["Status"]
+    assert sat[0]["Consolidate"] is False
+
+
+def test_core_satellite_in_readme(tmp_path, monkeypatch):
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "ICINIF", "Company Name": "Nifty ETF", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 100},
+        {"Stock Symbol": "BASE", "Company Name": "Base", "Qty": 900, "Average Cost Price": 100, "Current Market Price": 100},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": s, "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+        for s in ("ICINIF", "BASE")
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "ICINIF", "537007.BO")
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "ICINIF", "Broad Market")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Core / Satellite Portfolio Structure" in readme
+    assert "Core Allocation (Index ETFs)" in readme
+    assert "Satellite Allocation (Stocks & Thematic ETFs)" in readme
+
+
+
 

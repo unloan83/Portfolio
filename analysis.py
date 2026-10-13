@@ -661,14 +661,25 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         print(f"[warn] Look-through computation failed: {exc}")
         lookthrough_md = ""
 
+    # --- CORE / SATELLITE VIEW ---
+    try:
+        import core_satellite
+        cs_view = core_satellite.calculate_core_satellite_view(df, thesis_dict, RISK_CONFIG)
+        core_satellite_md = core_satellite.format_core_satellite_markdown(cs_view)
+    except Exception as exc:
+        print(f"[warn] Core/Satellite computation failed: {exc}")
+        core_satellite_md = ""
+
     markdown_output = (
         f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n"
         + perf_md
         + f"### Asset Health Assessment\n{report_df.to_markdown(index=False)}\n"
         + sector_summary_md
         + lookthrough_md
+        + core_satellite_md
         + consolidation_md
     )
+
 
 
 

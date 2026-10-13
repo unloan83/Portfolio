@@ -50,6 +50,9 @@ class RiskConfig:
     trailing_stop_atr_multiple: float = _float("TRAILING_STOP_ATR_MULTIPLE", 3.0)
     # Maximum risk factor group cap (default 25%)
     max_risk_group_pct: float = _float("MAX_RISK_GROUP_PCT", 25.0)
+    # Core/Satellite structure targets
+    target_core_pct: float = _float("TARGET_CORE_PCT", 50.0)
+    target_satellite_count: int = _int("TARGET_SATELLITE_COUNT", 15)
 
 
 RISK_CONFIG = RiskConfig()

@@ -147,6 +147,55 @@ Combined direct stock holdings plus indirect exposure via Nifty 50 (`ICINIF`) an
 
 *Showing top 15 of 47 holdings by effective weight.*
 
+### Core / Satellite Portfolio Structure
+
+* **Core Allocation (Index ETFs)**: **4.9%** (Target: 50.0%, Gap: +45.1%) across 3 index ETFs
+* **Satellite Allocation (Stocks & Thematic ETFs)**: **95.1%** across **31 holdings** (Target: ≤15, Excess: +16)
+
+#### Core Holdings (Passive Index Foundation)
+
+| Symbol   | Category         | Weight   | Value   |   Conviction |
+|:---------|:-----------------|:---------|:--------|-------------:|
+| ICINIF   | Index ETF (Core) | 3.6%     | ₹22,036 |            4 |
+| MIR150   | Index ETF (Core) | 0.7%     | ₹4,328  |            4 |
+| HDF250   | Index ETF (Core) | 0.7%     | ₹4,318  |            4 |
+
+#### Satellite Holdings (Ranked by Conviction & Weight)
+
+| Symbol     | Sector               | Type          |   Conviction | Weight   | Value   | Status         |
+|:-----------|:---------------------|:--------------|-------------:|:---------|:--------|:---------------|
+| HDFBAN     | Banking              | Single Stock  |            5 | 15.0%    | ₹92,820 | Active         |
+| RELIND     | Oil & Gas            | Single Stock  |            5 | 14.3%    | ₹88,669 | Active         |
+| DRREDD     | Pharma               | Single Stock  |            5 | 1.2%     | ₹7,440  | Active         |
+| NTPC       | Power                | Single Stock  |            5 | 0.6%     | ₹3,732  | Active         |
+| WIPRO      | IT                   | Single Stock  |            4 | 6.0%     | ₹37,180 | Active         |
+| LIC        | Insurance            | Single Stock  |            4 | 5.1%     | ₹31,524 | Active         |
+| LGELEC     | Consumer Electronics | Single Stock  |            4 | 3.7%     | ₹22,854 | Active         |
+| FEDBAN     | Banking              | Single Stock  |            4 | 2.5%     | ₹15,816 | Active         |
+| ASHLEY     | Auto                 | Single Stock  |            4 | 2.5%     | ₹15,621 | Active         |
+| TATCAP     | Financial Services   | Single Stock  |            4 | 2.4%     | ₹15,072 | Active         |
+| GAIL       | Oil & Gas            | Single Stock  |            4 | 1.7%     | ₹10,266 | Active         |
+| ONGC       | Oil & Gas            | Single Stock  |            4 | 1.4%     | ₹8,683  | Active         |
+| PETLNG     | Oil & Gas            | Single Stock  |            4 | 0.7%     | ₹4,060  | ⚠️ Consolidate |
+| TATPOW     | Power                | Single Stock  |            4 | 0.4%     | ₹2,760  | ⚠️ Consolidate |
+| NIPNIT     | IT                   | Thematic ETF  |            4 | 0.4%     | ₹2,513  | ⚠️ Consolidate |
+| KOTAKBKETF | Banking              | Thematic ETF  |            4 | 0.3%     | ₹1,729  | ⚠️ Consolidate |
+| ICIPSE     | Commodities          | Commodity ETF |            3 | 6.7%     | ₹41,840 | ⚠️ Consolidate |
+| BHAELE     | Defense              | Single Stock  |            3 | 4.9%     | ₹30,400 | ⚠️ Consolidate |
+| TATGLO     | Consumption          | Single Stock  |            3 | 4.6%     | ₹28,800 | ⚠️ Consolidate |
+| JSWENE     | Power                | Single Stock  |            3 | 4.0%     | ₹24,867 | ⚠️ Consolidate |
+| NTPGRE     | Power                | Single Stock  |            3 | 2.1%     | ₹12,812 | ⚠️ Consolidate |
+| JIOFIN     | Financial Services   | Single Stock  |            3 | 1.9%     | ₹11,543 | ⚠️ Consolidate |
+| ENGIND     | Infrastructure       | Single Stock  |            3 | 1.0%     | ₹6,060  | ⚠️ Consolidate |
+| SJVLIM     | Power                | Single Stock  |            3 | 0.8%     | ₹5,036  | ⚠️ Consolidate |
+| HINPET     | Oil & Gas            | Single Stock  |            3 | 0.7%     | ₹4,606  | ⚠️ Consolidate |
+| NHPC       | Power                | Single Stock  |            3 | 0.7%     | ₹4,042  | ⚠️ Consolidate |
+| GUJPPL     | Infrastructure       | Single Stock  |            3 | 0.6%     | ₹3,433  | ⚠️ Consolidate |
+| GUJGA      | Oil & Gas            | Single Stock  |            3 | 0.5%     | ₹2,808  | ⚠️ Consolidate |
+| ICIGOL     | Commodities          | Commodity ETF |            2 | 5.1%     | ₹31,358 | ⚠️ Consolidate |
+| IDECEL     | Telecom              | Single Stock  |            2 | 3.1%     | ₹19,200 | ⚠️ Consolidate |
+| SEQSCI     | Pharma               | Single Stock  |            2 | 0.4%     | ₹2,350  | ⚠️ Consolidate |
+
 
 ### Portfolio Consolidation
 Portfolio holds 34 positions versus target maximum of 15 (`config.max_open_positions`). The following 13 holdings are under 1.0% portfolio weight with conviction below 5 and are candidates for consolidation/exit:
