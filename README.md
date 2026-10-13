@@ -1,5 +1,62 @@
 # Orchestrated Multi-Agent Portfolio Audit - 2026-10-13
 
+### Portfolio Performance vs Benchmark
+
+* **First Recorded Trade**: 2021-04-16
+* **Valuation Date**: 2026-10-13
+* **Portfolio XIRR**: **-7.09%** (Current Traded Positions Value: ₹480,578)
+* **Benchmark XIRR**: **3.27%** (Simulated Benchmark Value: ₹606,887)
+* *Benchmark: Nifty 50 (^NSEI; Nifty 50 TRI is not available on Yahoo Finance)*
+
+#### Holding-Level XIRR (From Trade Cash Flows)
+
+| Symbol     |   Held Qty |   Traded Qty | Current Value   | XIRR    | History              |
+|:-----------|-----------:|-------------:|:----------------|:--------|:---------------------|
+| IDECEL     |       1500 |         1500 | ₹19,200         | 39.08%  | Full                 |
+| ENGIND     |         21 |           21 | ₹6,060          | 32.07%  | Full                 |
+| FEDBAN     |         48 |           48 | ₹15,816         | 30.40%  | Full                 |
+| GUJPPL     |         20 |           20 | ₹3,433          | 17.70%  | Full                 |
+| SEQSCI     |         10 |           10 | ₹2,350          | 16.11%  | Full                 |
+| BHAELE     |         80 |           48 | ₹18,240         | 13.15%  | Partial (48/80 sh)   |
+| NHPC       |         55 |           55 | ₹4,042          | 8.69%   | Full                 |
+| GAIL       |         61 |           61 | ₹10,266         | 8.27%   | Full                 |
+| TATPOW     |          8 |            8 | ₹2,760          | 7.44%   | Full                 |
+| HDF250     |         24 |           24 | ₹4,318          | 7.39%   | Full                 |
+| NIPNIT     |         76 |           76 | ₹2,513          | 6.47%   | Full                 |
+| NTPC       |         12 |           12 | ₹3,732          | 4.43%   | Full                 |
+| TATGLO     |         30 |           30 | ₹28,800         | 3.97%   | Full                 |
+| DRREDD     |          6 |            6 | ₹7,440          | 3.12%   | Full                 |
+| JSWENE     |         54 |           54 | ₹24,867         | -3.21%  | Full                 |
+| PETLNG     |         14 |           14 | ₹4,060          | -4.27%  | Full                 |
+| SJVLIM     |         67 |           67 | ₹5,036          | -4.97%  | Full                 |
+| HINPET     |         14 |           14 | ₹4,606          | -6.33%  | Full                 |
+| ONGC       |         39 |           39 | ₹8,683          | -6.98%  | Full                 |
+| GUJGA      |          7 |            7 | ₹2,808          | -7.98%  | Full                 |
+| ASHLEY     |        106 |           53 | ₹7,811          | -9.87%  | Partial (53/106 sh)  |
+| MIR150     |        194 |          194 | ₹4,328          | -12.09% | Full                 |
+| RELIND     |         76 |           74 | ₹86,336         | -12.63% | Partial (74/76 sh)   |
+| HDFBAN     |        130 |           75 | ₹53,550         | -13.98% | Partial (75/130 sh)  |
+| ICIGOL     |        250 |          250 | ₹31,358         | -14.83% | Full                 |
+| ICINIF     |         86 |           86 | ₹22,036         | -16.16% | Full                 |
+| KOTAKBKETF |         30 |           30 | ₹1,729          | -17.09% | Full                 |
+| JIOFIN     |         53 |           28 | ₹6,098          | -18.13% | Partial (28/53 sh)   |
+| ICIPSE     |        193 |          193 | ₹41,840         | -20.99% | Full                 |
+| WIPRO      |        220 |          170 | ₹28,730         | -25.35% | Partial (170/220 sh) |
+| LIC        |         80 |           45 | ₹17,732         | -55.55% | Partial (45/80 sh)   |
+
+#### Trade History Coverage Gaps
+
+* **Missing Holdings (No trades recorded in `trades.csv`)**: `LGELEC`, `NTPGRE`, `TATCAP`
+* **Partial Trade History (`trades.csv` shares < `portfolio.csv` shares)**:
+  - `ASHLEY`: Portfolio has 106 sh, trades record 53 sh (unrecorded: 53 sh)
+  - `HDFBAN`: Portfolio has 130 sh, trades record 75 sh (unrecorded: 55 sh)
+  - `BHAELE`: Portfolio has 80 sh, trades record 48 sh (unrecorded: 32 sh)
+  - `JIOFIN`: Portfolio has 53 sh, trades record 28 sh (unrecorded: 25 sh)
+  - `WIPRO`: Portfolio has 220 sh, trades record 170 sh (unrecorded: 50 sh)
+  - `LIC`: Portfolio has 80 sh, trades record 45 sh (unrecorded: 35 sh)
+  - `RELIND`: Portfolio has 76 sh, trades record 74 sh (unrecorded: 2 sh)
+
+
 ### Asset Health Assessment
 | Symbol     | Sector               | Weight   | Total Return   | Trailing Stop   | Decision   | Action                                                           | Reasoning                                                                                                                                                                                                      | Thesis Status   |   Conviction |
 |:-----------|:---------------------|:---------|:---------------|:----------------|:-----------|:-----------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------|-------------:|

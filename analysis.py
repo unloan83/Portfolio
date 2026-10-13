@@ -632,12 +632,29 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     else:
         consolidation_md += "No holdings currently qualify as consolidation candidates.\n"
 
+    # --- PERFORMANCE SECTION (XIRR vs BENCHMARK) ---
+    perf_md = ""
+    if os.path.exists("trades.csv"):
+        try:
+            import performance
+            trades_df = pd.read_csv("trades.csv")
+            perf_res = performance.calculate_portfolio_and_benchmark_xirr(
+                trades_df=trades_df,
+                portfolio_df=df,
+                current_prices={row["Stock Symbol"]: row["Valuation_Price"] for _, row in df.iterrows()},
+            )
+            perf_md = performance.format_performance_markdown(perf_res) + "\n"
+        except Exception as exc:
+            print(f"[warn] Performance computation failed: {exc}")
+
     markdown_output = (
         f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n"
-        f"### Asset Health Assessment\n{report_df.to_markdown(index=False)}\n"
+        + perf_md
+        + f"### Asset Health Assessment\n{report_df.to_markdown(index=False)}\n"
         + sector_summary_md
         + consolidation_md
     )
+
 
     with open("README.md", "w") as f:
         f.write(markdown_output)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -432,4 +433,92 @@ def test_combined_financials_sector_cap(tmp_path, monkeypatch):
     assert "* **Banking**:" in readme
     assert "* **Financial Services**:" in readme
     assert "* **Insurance**:" in readme
+
+
+def test_xirr_math():
+    import performance
+
+    # 10% annual gain
+    r1 = performance.xirr([-100.0, 110.0], ["2025-01-01", "2026-01-01"])
+    assert r1 is not None
+    assert abs(r1 - 0.10) < 0.001
+
+    # -10% annual loss
+    r2 = performance.xirr([-100.0, 90.0], ["2025-01-01", "2026-01-01"])
+    assert r2 is not None
+    assert abs(r2 - (-0.10)) < 0.001
+
+    # Edge cases
+    assert performance.xirr([-100.0, -50.0], ["2025-01-01", "2026-01-01"]) is None
+    assert performance.xirr([100.0, 50.0], ["2025-01-01", "2026-01-01"]) is None
+    assert performance.xirr([], []) is None
+
+
+def test_performance_calculation_and_gaps():
+    import performance
+
+    trades = pd.DataFrame([
+        {"Date": "2024-01-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 100},
+        {"Date": "2024-06-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 120},
+        {"Date": "2024-01-01", "Stock Symbol": "STOCK_B", "Action": "BUY", "Qty": 5, "Price": 200},
+    ])
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "STOCK_A", "Qty": 20, "Current Market Price": 150},  # full (20/20)
+        {"Stock Symbol": "STOCK_B", "Qty": 10, "Current Market Price": 220},  # partial (5/10)
+        {"Stock Symbol": "STOCK_C", "Qty": 5, "Current Market Price": 50},    # missing completely
+    ])
+    bench_df = pd.DataFrame({
+        "Close": [1000.0, 1100.0, 1200.0]
+    }, index=pd.to_datetime(["2024-01-01", "2024-06-01", "2025-01-01"]))
+
+    res = performance.calculate_portfolio_and_benchmark_xirr(
+        trades_df=trades,
+        portfolio_df=portfolio,
+        current_prices={"STOCK_A": 150.0, "STOCK_B": 220.0, "STOCK_C": 50.0},
+        benchmark_history=bench_df,
+        valuation_date=datetime(2025, 1, 1),
+    )
+
+    assert res["portfolio_xirr"] is not None
+    assert res["benchmark_xirr"] is not None
+    assert res["missing_completely"] == ["STOCK_C"]
+    assert len(res["partial_history"]) == 1
+    assert res["partial_history"][0]["Stock Symbol"] == "STOCK_B"
+    assert res["partial_history"][0]["Difference"] == 5.0
+
+    md = performance.format_performance_markdown(res)
+    assert "### Portfolio Performance vs Benchmark" in md
+    assert "STOCK_C" in md
+    assert "STOCK_B" in md
+    assert "^NSEI" in md
+
+
+def test_performance_section_in_readme(tmp_path, monkeypatch):
+    trades = pd.DataFrame([
+        {"Date": "2024-01-01", "Stock Symbol": "BASE", "Action": "BUY", "Qty": 100, "Price": 100},
+    ])
+    trades.to_csv(tmp_path / "trades.csv", index=False)
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 120},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Portfolio Performance vs Benchmark" in readme
+    assert "### Asset Health Assessment" in readme
+    # Ensure Performance section appears at the top (before Asset Health Assessment)
+    perf_idx = readme.index("### Portfolio Performance vs Benchmark")
+    health_idx = readme.index("### Asset Health Assessment")
+    assert perf_idx < health_idx
+
 
