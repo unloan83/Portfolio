@@ -53,6 +53,10 @@ class RiskConfig:
     # Core/Satellite structure targets
     target_core_pct: float = _float("TARGET_CORE_PCT", 50.0)
     target_satellite_count: int = _int("TARGET_SATELLITE_COUNT", 15)
+    # Tax planning config (Indian equity rates)
+    stcg_rate: float = _float("STCG_RATE", 0.20)
+    ltcg_rate: float = _float("LTCG_RATE", 0.125)
+    ltcg_exemption_limit: float = _float("LTCG_EXEMPTION_LIMIT", 125000.0)
 
 
 RISK_CONFIG = RiskConfig()

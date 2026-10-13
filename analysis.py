@@ -670,6 +670,21 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         print(f"[warn] Core/Satellite computation failed: {exc}")
         core_satellite_md = ""
 
+    # --- TAX PLAN SECTION (FIFO CAPITAL GAINS & LOSS HARVESTING) ---
+    tax_md = ""
+    if os.path.exists("trades.csv"):
+        try:
+            import tax_planner
+            tax_plan = tax_planner.calculate_tax_plan(
+                trades_df=pd.read_csv("trades.csv"),
+                portfolio_df=df,
+                current_prices={row["Stock Symbol"]: row["Valuation_Price"] for _, row in df.iterrows()},
+                config=RISK_CONFIG,
+            )
+            tax_md = tax_planner.format_tax_plan_markdown(tax_plan, RISK_CONFIG) + "\n"
+        except Exception as exc:
+            print(f"[warn] Tax plan computation failed: {exc}")
+
     markdown_output = (
         f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n"
         + perf_md
@@ -678,6 +693,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         + lookthrough_md
         + core_satellite_md
         + consolidation_md
+        + tax_md
     )
 
 

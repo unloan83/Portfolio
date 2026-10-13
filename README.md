@@ -215,3 +215,39 @@ Portfolio holds 34 positions versus target maximum of 15 (`config.max_open_posit
 | HINPET     | Oil & Gas      | 0.7%     |            3 | Exit all 14 sh (~₹4,606)  |
 | SJVLIM     | Power          | 0.8%     |            3 | Exit all 67 sh (~₹5,036)  |
 | ENGIND     | Infrastructure | 1.0%     |            3 | Exit all 21 sh (~₹6,060)  |
+### Tax Plan (FY 2026-27)
+
+> [!NOTE]
+> **Advisory Notice**: This tax plan is indicative and for planning purposes only. Tax parameters (STCG Rate: **20.0%**, LTCG Rate: **12.5%**, Section 112A LTCG Exemption: **₹125,000**) are configured in `config.py` (`stcg_rate`, `ltcg_rate`, `ltcg_exemption_limit`). Consult a chartered accountant for statutory tax filing.
+
+#### Capital Gains Inventory (FIFO Matching)
+
+| Metric                                | Amount      | Tax Rate        | Notes                                |
+|:--------------------------------------|:------------|:----------------|:-------------------------------------|
+| Realised STCG (FY 2026-27 so far)     | ₹0.00       | 20.0%           | Taxable on net short-term gains      |
+| Realised LTCG (FY 2026-27 so far)     | ₹0.00       | 12.5%           | Subject to ₹125,000 annual exemption |
+| Section 112A LTCG Exemption Remaining | ₹125,000.00 | 0.0%            | Limit: ₹125,000 per financial year   |
+| Total Unrealised LTCG (> 365 days)    | ₹38,706.98  | 12.5%           | Open long-term profit inventory      |
+| ⚡ Eligible Tax-Free LTCG to Harvest  | ₹38,706.98  | 0.0% (Zero Tax) | Can be booked tax-free before FY end |
+| Total Unrealised STCG (≤ 365 days)    | ₹1,399.22   | 20.0%           | Short-term unrealised gains          |
+
+#### Loss-Harvest Candidates (Offset Value)
+
+The following positions carry unrealised capital losses that can be booked to offset taxable STCG/LTCG (Total potential offset: **₹147,957**, Tax savings potential: **₹20,752**):
+
+| Symbol   |   Shares | CMP      | Avg Cost   | Loss Offset Value   | Term      | Potential Tax Saved   |
+|:---------|---------:|:---------|:-----------|:--------------------|:----------|:----------------------|
+| HDFBAN   |       75 | ₹714.00  | ₹1267.91   | ₹41,543             | LTCG/STCG | ₹5,250                |
+| RELIND   |       74 | ₹1166.70 | ₹1627.08   | ₹34,068             | LTCG/STCG | ₹4,540                |
+| WIPRO    |      170 | ₹169.00  | ₹304.31    | ₹23,003             | LTCG/STCG | ₹3,159                |
+| LIC      |       45 | ₹394.05  | ₹895.05    | ₹22,545             | LTCG/STCG | ₹3,578                |
+| ICIPSE   |      193 | ₹216.79  | ₹250.36    | ₹6,478              | STCG      | ₹1,296                |
+| JSWENE   |       28 | ₹460.50  | ₹668.00    | ₹5,810              | LTCG      | ₹726                  |
+| JIOFIN   |       28 | ₹217.80  | ₹344.38    | ₹3,544              | LTCG      | ₹443                  |
+| ICIGOL   |      250 | ₹125.43  | ₹138.24    | ₹3,202              | STCG      | ₹640                  |
+| ASHLEY   |       41 | ₹147.37  | ₹215.55    | ₹2,795              | LTCG      | ₹349                  |
+| ICINIF   |       86 | ₹256.23  | ₹271.08    | ₹1,277              | STCG      | ₹255                  |
+
+*Showing top 10 of 20 loss-harvest candidates.*
+
+

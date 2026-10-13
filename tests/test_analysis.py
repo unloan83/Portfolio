@@ -683,5 +683,87 @@ def test_core_satellite_in_readme(tmp_path, monkeypatch):
     assert "Satellite Allocation (Stocks & Thematic ETFs)" in readme
 
 
+def test_tax_planner_fifo_and_exemption():
+    from config import RiskConfig
+    import tax_planner
+
+    trades = pd.DataFrame([
+        # Lot 1: bought > 365 days ago (LTCG)
+        {"Date": "2024-01-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 100},
+        # Lot 2: bought recently (STCG)
+        {"Date": "2026-08-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 150},
+        # Sell 5 shares in current FY (2026-05-01): FIFO matches against Lot 1
+        {"Date": "2026-05-01", "Stock Symbol": "STOCK_A", "Action": "SELL", "Qty": 5, "Price": 200},
+        # Losing position
+        {"Date": "2024-01-01", "Stock Symbol": "LOSER", "Action": "BUY", "Qty": 10, "Price": 200},
+    ])
+    port = pd.DataFrame([
+        {"Stock Symbol": "STOCK_A", "Qty": 15, "Current Market Price": 250},
+        {"Stock Symbol": "LOSER", "Qty": 10, "Current Market Price": 120},
+    ])
+
+    cfg = RiskConfig(stcg_rate=0.20, ltcg_rate=0.125, ltcg_exemption_limit=125000.0)
+    res = tax_planner.calculate_tax_plan(
+        trades_df=trades,
+        portfolio_df=port,
+        current_prices={"STOCK_A": 250.0, "LOSER": 120.0},
+        valuation_date=datetime(2026, 10, 13),
+        config=cfg,
+    )
+
+    # Realised LTCG on 5 shares: 5 * (200 - 100) = 500
+    assert res["realised_ltcg"] == 500.0
+    assert res["realised_stcg"] == 0.0
+
+    # Remaining exemption: 125000 - 500 = 124500
+    assert res["remaining_exemption"] == 124500.0
+
+    # Unrealised LTCG on remaining 5 shares of Lot 1: 5 * (250 - 100) = 750
+    assert res["unrealised_ltcg"] == 750.0
+    assert res["harvestable_tax_free_ltcg"] == 750.0  # since 750 < 124500
+
+    # Unrealised STCG on 10 shares of Lot 2: 10 * (250 - 150) = 1000
+    assert res["unrealised_stcg"] == 1000.0
+
+    # Loss harvest candidate: LOSER (loss = 10 * (200 - 120) = 800)
+    assert len(res["loss_harvest_candidates"]) == 1
+    assert res["loss_harvest_candidates"][0]["Symbol"] == "LOSER"
+    assert res["loss_harvest_candidates"][0]["Unrealised Loss"] == 800.0
+
+    md = tax_planner.format_tax_plan_markdown(res, cfg)
+    assert "### Tax Plan" in md
+    assert "Advisory Notice" in md
+    assert "20.0%" in md
+    assert "12.5%" in md
+    assert "LOSER" in md
+
+
+def test_tax_plan_in_readme(tmp_path, monkeypatch):
+    trades = pd.DataFrame([
+        {"Date": "2024-01-01", "Stock Symbol": "BASE", "Action": "BUY", "Qty": 100, "Price": 100},
+    ])
+    trades.to_csv(tmp_path / "trades.csv", index=False)
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 120},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Tax Plan" in readme
+    assert "Advisory Notice" in readme
+    assert "config.py" in readme
+
+
+
 
 
