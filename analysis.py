@@ -132,7 +132,7 @@ def fetch_market_data(yf_ticker: str) -> dict:
 
         breach_cutoff = dma_200_series * (1.0 - RISK_CONFIG.dma_200_breach_pct / 100.0)
         c_sessions = 0
-        for c_px, b_px in zip(reversed(clean_close), reversed(breach_cutoff)):
+        for c_px, b_px in zip(reversed(clean_close.values), reversed(breach_cutoff.values)):
             if pd.notna(c_px) and pd.notna(b_px) and c_px < b_px:
                 c_sessions += 1
             else:
