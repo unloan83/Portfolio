@@ -4,7 +4,7 @@ import re
 import html
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Mapping, Optional
+from typing import Any, Mapping, Optional
 from zoneinfo import ZoneInfo
 import pandas as pd
 import yfinance as yf
@@ -219,6 +219,106 @@ class _PortfolioView:
         return dict(self.sector_weights)
 
 
+def compute_group_excess_pct(
+    df: pd.DataFrame,
+    config: RiskConfig = RISK_CONFIG,
+    risk_group_exposures: Optional[dict[str, Any]] = None,
+) -> dict[str, float]:
+    """
+    Computes each symbol's pro rata share of portfolio excess weight across:
+    1. Individual sectors exceeding max_sector_pct (default 25%)
+    2. Combined Financials group exceeding max_sector_pct (default 25%)
+    3. Any risk group exceeding max_risk_group_pct (default 25%)
+    Returns a dict mapping symbol -> maximum allocated excess weight percentage.
+    """
+    if df.empty:
+        return {}
+
+    sym_col = "Stock Symbol" if "Stock Symbol" in df.columns else ("symbol" if "symbol" in df.columns else df.columns[0])
+    sec_col = "Sector" if "Sector" in df.columns else ("sector" if "sector" in df.columns else None)
+    weight_col = "Weight_%" if "Weight_%" in df.columns else ("weight_pct" if "weight_pct" in df.columns else "weight")
+
+    if weight_col not in df.columns:
+        return {}
+
+    excess_pct_by_sym: dict[str, float] = {row[sym_col]: 0.0 for _, row in df.iterrows()}
+
+    # 1. Individual sectors
+    if sec_col and sec_col in df.columns:
+        sector_weights = df.groupby(sec_col)[weight_col].sum().to_dict()
+        for sec, sec_w in sector_weights.items():
+            if sec_w > config.max_sector_pct:
+                sec_excess = sec_w - config.max_sector_pct
+                sec_rows = df[df[sec_col] == sec]
+                for _, r in sec_rows.iterrows():
+                    sym = r[sym_col]
+                    w = r[weight_col]
+                    alloc = sec_excess * (w / sec_w) if sec_w > 0 else 0.0
+                    excess_pct_by_sym[sym] = max(excess_pct_by_sym.get(sym, 0.0), alloc)
+
+        # 2. Combined Financials group
+        fin_rows = df[df[sec_col].isin(FINANCIALS_SECTORS)]
+        fin_total_w = fin_rows[weight_col].sum() if not fin_rows.empty else 0.0
+        if fin_total_w > config.max_sector_pct:
+            fin_excess = fin_total_w - config.max_sector_pct
+            for _, r in fin_rows.iterrows():
+                sym = r[sym_col]
+                w = r[weight_col]
+                alloc = fin_excess * (w / fin_total_w) if fin_total_w > 0 else 0.0
+                excess_pct_by_sym[sym] = max(excess_pct_by_sym.get(sym, 0.0), alloc)
+
+    # 3. Risk groups
+    if risk_group_exposures is None:
+        try:
+            risk_group_exposures = lookthrough.calculate_risk_group_exposures(df, RISK_GROUPS)
+        except Exception:
+            risk_group_exposures = {}
+
+    for gname, gdata in (risk_group_exposures or {}).items():
+        exposure_pct = gdata.get("exposure_pct", 0.0)
+        cap = getattr(config, "max_risk_group_pct", 25.0)
+        if exposure_pct > cap:
+            rg_excess = exposure_pct - cap
+            member_breakdown = gdata.get("member_breakdown", {})
+            for sym, w in member_breakdown.items():
+                alloc = rg_excess * (w / exposure_pct) if exposure_pct > 0 else 0.0
+                excess_pct_by_sym[sym] = max(excess_pct_by_sym.get(sym, 0.0), alloc)
+
+    return excess_pct_by_sym
+
+
+def compute_group_excess_shares(
+    df: pd.DataFrame,
+    total_portfolio_value: float,
+    config: RiskConfig = RISK_CONFIG,
+    risk_group_exposures: Optional[dict[str, Any]] = None,
+) -> dict[str, int]:
+    """
+    Computes each symbol's pro rata trim shares required by sector and risk group excess.
+    Trim per holding share = math.ceil(total_portfolio_value * (alloc_pct / 100) / price), capped at qty.
+    """
+    if df.empty:
+        return {}
+
+    excess_pcts = compute_group_excess_pct(df, config=config, risk_group_exposures=risk_group_exposures)
+    sym_col = "Stock Symbol" if "Stock Symbol" in df.columns else ("symbol" if "symbol" in df.columns else df.columns[0])
+    excess_shares: dict[str, int] = {}
+
+    for _, r in df.iterrows():
+        sym = r[sym_col]
+        alloc_pct = excess_pcts.get(sym, 0.0)
+        px = r.get("Valuation_Price", r.get("Current Market Price", r.get("price", 0.0)))
+        qty = r.get("Qty", r.get("qty", 0))
+        if alloc_pct > 0 and px > 0 and total_portfolio_value > 0:
+            excess_val = total_portfolio_value * (alloc_pct / 100.0)
+            sh = int(min(qty, math.ceil(excess_val / px)))
+            excess_shares[sym] = sh
+        else:
+            excess_shares[sym] = 0
+
+    return excess_shares
+
+
 def size_action(
     eval_res,
     qty: float,
@@ -231,26 +331,39 @@ def size_action(
     risk_manager: RiskManager,
     symbol: str,
     config: RiskConfig = RISK_CONFIG,
+    group_excess_shares: int = 0,
+    is_consolidation: Optional[bool] = None,
 ) -> str:
     """Turn the decision's action into share counts the user can execute."""
     action = eval_res.recommended_action
     decision = eval_res.decision
 
+    if is_consolidation is None:
+        conv = getattr(eval_res, "conviction", None)
+        is_consolidation = (stock_weight < 1.0 and (conv is None or conv < 5.0))
+
     if decision == "TRIM":
-        shares = trim_quantity(qty, price, total_value, config.max_position_pct)
-        if sector_weight > config.max_sector_pct:
-            target_weight = max(0.0, stock_weight - (sector_weight - config.max_sector_pct))
-            shares = max(shares, trim_quantity(qty, price, total_value, target_weight))
-        if getattr(eval_res, "trailing_stop_hit", False):
-            shares = max(shares, math.ceil(qty * config.trailing_trim_fraction))
+        pos_shares = trim_quantity(qty, price, total_value, config.max_position_pct)
+        trail_shares = (
+            math.ceil(qty * config.trailing_trim_fraction)
+            if getattr(eval_res, "trailing_stop_hit", False)
+            else 0
+        )
+        shares = max(pos_shares, group_excess_shares, trail_shares)
         shares = int(min(shares, qty))
         if shares <= 0:
             return action
+        trade_val = shares * price
+        if trade_val < config.minimum_trade_value:
+            return "Hold (below minimum trade)"
         new_weight = (qty - shares) * price / total_value * 100
-        return f"Trim {shares} sh (~₹{shares * price:,.0f}) → {new_weight:.1f}% weight"
+        return f"Trim {shares} sh (~₹{trade_val:,.0f}) → {new_weight:.1f}% weight"
 
     if decision == "SELL":
-        return f"Exit all {int(qty)} sh (~₹{qty * price:,.0f})"
+        trade_val = qty * price
+        if trade_val < config.minimum_trade_value and not is_consolidation:
+            return "Hold (below minimum trade)"
+        return f"Exit all {int(qty)} sh (~₹{trade_val:,.0f})"
 
     if decision in ("ACCUMULATE", "BUY"):
         if action == "ACCUMULATE (next monthly review)":
@@ -263,8 +376,11 @@ def size_action(
         if not sizing.approved:
             return f"{action} — no size: {sizing.reason}"
         shares = sizing.quantity
+        trade_val = shares * price
+        if trade_val < config.minimum_trade_value:
+            return "Hold (below minimum trade)"
         return (
-            f"{action}: buy {shares} sh (~₹{shares * price:,.0f}), "
+            f"{action}: buy {shares} sh (~₹{trade_val:,.0f}), "
             f"stop ₹{sizing.stop_price:.2f}, target ₹{sizing.target_price:.2f}"
         )
 
@@ -430,6 +546,12 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     sector_allocations = df.groupby('Sector')['Weight_%'].sum().to_dict()
     financials_total = sum(sector_allocations.get(s, 0.0) for s in FINANCIALS_SECTORS)
     risk_group_exposures = lookthrough.calculate_risk_group_exposures(df, RISK_GROUPS)
+    group_excess_shares_map = compute_group_excess_shares(
+        df=df,
+        total_portfolio_value=total_portfolio_value,
+        config=RISK_CONFIG,
+        risk_group_exposures=risk_group_exposures,
+    )
     risk_manager = RiskManager(
         _PortfolioView(
             holdings={
@@ -545,6 +667,9 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             atr_value=md["atr"],
             risk_manager=risk_manager,
             symbol=broker_symbol,
+            config=RISK_CONFIG,
+            group_excess_shares=group_excess_shares_map.get(broker_symbol, 0),
+            is_consolidation=(stock_weight < 1.0 and (conviction_val is None or conviction_val < 5.0)),
         )
         explanation = eval_res.explanation
         thesis_status = eval_res.thesis_status

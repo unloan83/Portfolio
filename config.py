@@ -68,6 +68,8 @@ class RiskConfig:
     dma_200_exit_pct: float = _float("DMA_200_EXIT_PCT", 2.0)
     # Maximum percentage distance below 52-week high allowed for ACCUMULATE
     accumulate_high_52w_pct: float = _float("ACCUMULATE_HIGH_52W_PCT", 20.0)
+    # Minimum trade rupee value threshold to prevent sub-scale transaction churn
+    minimum_trade_value: float = _float("MINIMUM_TRADE_VALUE", 10000.0)
     # Maximum risk factor group cap (default 25%)
     max_risk_group_pct: float = _float("MAX_RISK_GROUP_PCT", 25.0)
     # Core/Satellite structure targets

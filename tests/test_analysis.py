@@ -308,8 +308,8 @@ def test_trailing_stop_rule_trims_half_winner(tmp_path, monkeypatch):
     # Total return: +60% >= 50% minimum gain.
     portfolio = pd.DataFrame(
         [
-            {"Stock Symbol": "WINNER", "Company Name": "Winner Co", "Qty": 80, "Average Cost Price": 100, "Current Market Price": 160},
-            {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 1000, "Average Cost Price": 100, "Current Market Price": 160},
+            {"Stock Symbol": "WINNER", "Company Name": "Winner Co", "Qty": 300, "Average Cost Price": 100, "Current Market Price": 160},
+            {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 10000, "Average Cost Price": 100, "Current Market Price": 160},
         ]
     )
     portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
@@ -333,8 +333,8 @@ def test_trailing_stop_rule_trims_half_winner(tmp_path, monkeypatch):
     winner_row = tracking.loc["WINNER"]
     assert winner_row["Decision"] == "TRIM"
     assert winner_row["Rationale"] == "trailing stop hit"
-    # Sells 1/3 of 80 shares = 27 shares
-    assert winner_row["Recommended_Action"].startswith("Trim 27 sh")
+    # Sells 1/3 of 300 shares = 100 shares
+    assert winner_row["Recommended_Action"].startswith("Trim 100 sh")
 
     readme = (tmp_path / "README.md").read_text()
     assert "| Trailing Stop" in readme
