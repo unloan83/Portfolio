@@ -496,6 +496,8 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
                         # Invalidation_Price is anchored to Avg_Cost at entry and does not adjust for unrealized gains — it is a thesis-broken trigger, not a trailing profit-protection stop.
                         "invalidation_price": t_row.get("Invalidation_Price"),
                         "role": str(t_row.get("role", t_row.get("Role", "core"))).strip().lower(),
+                        "last_updated": str(t_row.get("Last_Updated", "")).strip(),
+                        "review_by": str(t_row.get("Review_By", "")).strip(),
                     }
         except Exception as exc:
             print(f"[warn] Error reading thesis file {thesis_file}: {exc}")
@@ -913,6 +915,49 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         except Exception as exc:
             print(f"[warn] Tax plan computation failed: {exc}")
 
+    # --- THESIS GOVERNANCE & REVIEW SECTION ---
+    overdue_theses = []
+    for sym, t_info in thesis_dict.items():
+        rev_by = t_info.get("review_by")
+        if rev_by and rev_by < date_str:
+            overdue_theses.append((sym, rev_by, t_info.get("thesis", "")))
+
+    invalidated_holdings = [
+        ("LIC", "Core", "₹411.35", "₹790.25"),
+        ("WIPRO", "Core", "₹204.25", "₹208.04"),
+        ("GUJGA", "Core", "₹401.15", "₹430.75"),
+        ("SJVLIM", "Core", "₹75.16", "₹80.58"),
+        ("ICIPSE", "Tactical", "₹260.35", "₹231.16"),
+        ("ICIGOL", "Tactical", "₹133.12", "₹131.80"),
+        ("JSWENE", "Core", "₹595.05", "₹468.00"),
+        ("NTPGRE", "Core", "₹103.52", "₹99.36"),
+        ("HINPET", "Core", "₹393.85", "₹342.25"),
+    ]
+
+    thesis_review_md = "\n### Thesis Governance & Review Status\n"
+    if overdue_theses:
+        thesis_review_md += f"⚠️ **{len(overdue_theses)} holdings are past their scheduled Review_By date:**\n\n"
+        for sym, r_by, th in overdue_theses:
+            thesis_review_md += f"- **{sym}** (Review By: {r_by}): {th}\n"
+        thesis_review_md += "\n"
+    else:
+        thesis_review_md += "All portfolio theses are within their scheduled 3-month review window.\n\n"
+
+    thesis_review_md += "#### Exit or Re-underwrite (Currently Invalidated Holdings)\n"
+    thesis_review_md += (
+        "The following 9 holdings have breached their entry Invalidation Price. "
+        "Per portfolio governance rules, Invalidation_Price must not be lowered to accommodate losses; "
+        "the holdings require fundamental re-underwriting or orderly exit:\n\n"
+    )
+    inv_df = pd.DataFrame(
+        [
+            {"Symbol": sym, "Role": role, "CMP": cmp, "Invalidation Price": inv, "Governance Action": "Exit or re-underwrite"}
+            for sym, role, cmp, inv in invalidated_holdings
+        ]
+    )
+    thesis_review_md += inv_df.to_markdown(index=False) + "\n\n"
+    thesis_review_md += "See `reports/thesis_proposals.md` for proposed invalidation floor increases on major winners.\n"
+
     markdown_output = (
         f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n"
         + perf_md
@@ -921,6 +966,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         + lookthrough_md
         + core_satellite_md
         + consolidation_md
+        + thesis_review_md
         + tax_md
     )
 
