@@ -344,3 +344,296 @@ def test_recommended_action_always_matches_decision(kwargs):
         "HOLD": {"Hold"},
     }[res.decision]
     assert res.recommended_action in expected
+
+
+# ==============================================================================
+# PART 5 DEDICATED TESTS: Trailing Stop, Invalidation, Review Hysteresis, Accumulate
+# ==============================================================================
+
+def test_trailing_stop_rules():
+    # 1. Loser below trailing stop level -> no TRIM
+    res_loser = evaluate_signal(
+        current_price=60.0,
+        dma_50=90.0,
+        dma_200=100.0,
+        total_return=-20.0,  # losing position
+        thesis_text="Intact thesis",
+        conviction=4.0,
+        invalidation_price=40.0,
+        high_52w=100.0,
+        atr=5.0,
+        is_month_end=True,
+    )
+    assert not res_loser.trailing_stop_hit
+    assert res_loser.decision != "TRIM"
+
+    # 2. +10% gain -> not armed (needs total_return >= 50%)
+    res_10pct = evaluate_signal(
+        current_price=110.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        total_return=10.0,  # below 50%
+        thesis_text="Intact thesis",
+        conviction=4.0,
+        invalidation_price=80.0,
+        high_52w=200.0,
+        atr=10.0,
+        is_month_end=True,
+    )
+    assert not res_10pct.trailing_stop_hit
+    assert res_10pct.decision != "TRIM"
+
+    # 3. +140% winner 35% below its high at month-end -> TRIM 1/3
+    # high = 200, 35% drawdown = 130. max(30%, 3*ATR=15) = 30% drawdown limit = 140.
+    # price 130 is <= 140, total_return 140% >= 50%, is_month_end=True
+    res_winner_month_end = evaluate_signal(
+        current_price=130.0,
+        dma_50=120.0,
+        dma_200=100.0,
+        total_return=140.0,
+        thesis_text="Growth thesis",
+        conviction=4.0,
+        invalidation_price=50.0,
+        high_52w=200.0,
+        atr=5.0,
+        is_month_end=True,
+    )
+    assert res_winner_month_end.trailing_stop_hit
+    assert res_winner_month_end.decision == "TRIM"
+    assert res_winner_month_end.rationale == "trailing stop hit"
+
+    # 4. Same +140% winner mid-month -> no TRIM
+    res_winner_mid_month = evaluate_signal(
+        current_price=130.0,
+        dma_50=120.0,
+        dma_200=100.0,
+        total_return=140.0,
+        thesis_text="Growth thesis",
+        conviction=4.0,
+        invalidation_price=50.0,
+        high_52w=200.0,
+        atr=5.0,
+        is_month_end=False,  # mid-month
+    )
+    assert not res_winner_mid_month.trailing_stop_hit
+    assert res_winner_mid_month.decision != "TRIM"
+
+    # 5. Broad index ETF is never trailing-trimmed (e.g. ICINIF, HDF250, MIR150)
+    for etf_sym in ("ICINIF", "HDF250", "MIR150"):
+        res_etf = evaluate_signal(
+            current_price=130.0,
+            dma_50=120.0,
+            dma_200=100.0,
+            total_return=140.0,
+            thesis_text="Index ETF",
+            conviction=4.0,
+            invalidation_price=50.0,
+            high_52w=200.0,
+            atr=5.0,
+            is_month_end=True,
+            symbol=etf_sym,
+        )
+        assert not res_etf.trailing_stop_hit
+        assert res_etf.decision != "TRIM"
+
+
+def test_invalidation_rules():
+    import pandas as pd
+    # 1 close below invalidation price -> REVIEW
+    hist_1 = pd.Series([105.0, 102.0, 99.0])  # invalidation at 100, 1 close below
+    res_1 = evaluate_signal(
+        current_price=99.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Core holding",
+        conviction=4.0,
+        invalidation_price=100.0,
+        price_history=hist_1,
+        role="core",
+        is_friday_close=False,
+    )
+    assert res_1.decision == "REVIEW"
+    assert "invalidation breached" in res_1.rationale
+
+    # 2 closes below invalidation price -> REVIEW
+    hist_2 = pd.Series([105.0, 99.0, 98.0])  # 2 closes below
+    res_2 = evaluate_signal(
+        current_price=98.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Core holding",
+        conviction=4.0,
+        invalidation_price=100.0,
+        price_history=hist_2,
+        role="core",
+        is_friday_close=False,
+    )
+    assert res_2.decision == "REVIEW"
+    assert "invalidation breached" in res_2.rationale
+
+    # 3 closes below invalidation price -> SELL
+    hist_3 = pd.Series([99.0, 98.0, 97.0])  # 3 consecutive closes below
+    res_3 = evaluate_signal(
+        current_price=97.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Core holding",
+        conviction=4.0,
+        invalidation_price=100.0,
+        price_history=hist_3,
+        role="core",
+        is_friday_close=False,
+    )
+    assert res_3.decision == "SELL"
+    assert res_3.thesis_status == "INVALIDATED"
+
+    # Single close >= 10% below invalidation price -> SELL
+    hist_10pct = pd.Series([105.0, 102.0, 89.0])  # 89 <= 100 * 0.9 = 90
+    res_10pct = evaluate_signal(
+        current_price=89.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Core holding",
+        conviction=4.0,
+        invalidation_price=100.0,
+        price_history=hist_10pct,
+        role="core",
+        is_friday_close=False,
+    )
+    assert res_10pct.decision == "SELL"
+    assert res_10pct.thesis_status == "INVALIDATED"
+
+    # Friday close below invalidation price -> SELL
+    res_fri = evaluate_signal(
+        current_price=99.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Core holding",
+        conviction=4.0,
+        invalidation_price=100.0,
+        price_history=hist_1,
+        role="core",
+        is_friday_close=True,  # Friday close
+    )
+    assert res_fri.decision == "SELL"
+    assert res_fri.thesis_status == "INVALIDATED"
+
+    # Tactical role -> immediate SELL on first close below
+    res_tactical = evaluate_signal(
+        current_price=99.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Tactical holding",
+        conviction=2.0,
+        invalidation_price=100.0,
+        price_history=hist_1,
+        role="tactical",
+        is_friday_close=False,
+    )
+    assert res_tactical.decision == "SELL"
+    assert res_tactical.thesis_status == "INVALIDATED"
+
+
+def test_review_hysteresis():
+    # Entry: close is > 3% below 200-DMA for >= 20 sessions -> enters REVIEW
+    res_entry = evaluate_signal(
+        current_price=95.0,  # 5% below 200 DMA 100
+        dma_50=98.0,
+        dma_200=100.0,
+        thesis_text="Intact thesis",
+        conviction=4.0,
+        invalidation_price=70.0,
+        sessions_below_200dma=20,
+        in_dma_review=False,
+    )
+    assert res_entry.decision == "REVIEW"
+    assert "200-DMA breakdown hysteresis review" in res_entry.explanation
+
+    # Stays in REVIEW while below 200-DMA + 2%
+    res_still_in = evaluate_signal(
+        current_price=101.0,  # 1% above 200 DMA, but exit requires > 200 DMA + 2% (102.0)
+        dma_50=100.0,
+        dma_200=100.0,
+        thesis_text="Intact thesis",
+        conviction=4.0,
+        invalidation_price=70.0,
+        sessions_below_200dma=0,
+        in_dma_review=True,
+    )
+    assert res_still_in.decision == "REVIEW"
+
+    # Exit REVIEW: close is > 200-DMA + 2% (e.g. 103 > 102) -> exits REVIEW and never SELL
+    res_exit = evaluate_signal(
+        current_price=103.0,  # > 102.0
+        dma_50=101.0,
+        dma_200=100.0,
+        thesis_text="Intact thesis",
+        conviction=4.0,
+        invalidation_price=70.0,
+        sessions_below_200dma=0,
+        in_dma_review=True,
+        stock_weight=2.0,
+        is_month_end=False,
+    )
+    assert res_exit.decision != "REVIEW"
+    assert res_exit.decision != "SELL"
+
+
+def test_accumulate_and_extended_rules():
+    # Overextension (> 1.25 * 50-DMA) sets is_overextended, gives "EXTENDED: don't add", and blocks ACCUMULATE
+    res_extended = evaluate_signal(
+        current_price=130.0,  # 130 > 1.25 * 100 = 125
+        dma_50=100.0,
+        dma_200=90.0,
+        thesis_text="Intact thesis",
+        conviction=5.0,
+        invalidation_price=70.0,
+        high_52w=135.0,
+        dma_200_rising=True,
+        vol_adj_return_6m=1.5,
+        vol_adj_return_12m=1.2,
+        is_month_end=True,
+        stock_weight=2.0,
+        sector_risk_exposure=15.0,
+    )
+    assert res_extended.is_overextended
+    assert "EXTENDED: don't add" in res_extended.sizing_note
+    assert res_extended.decision == "HOLD"  # blocks ACCUMULATE
+
+    # Fully qualified ACCUMULATE at month-end
+    res_accum = evaluate_signal(
+        current_price=110.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Intact thesis",
+        conviction=5.0,
+        invalidation_price=70.0,
+        high_52w=120.0,  # within 20% of 52w high (110 >= 96)
+        dma_200_rising=True,
+        vol_adj_return_6m=1.2,
+        vol_adj_return_12m=1.1,
+        is_month_end=True,
+        stock_weight=3.0,
+        sector_risk_exposure=15.0,
+    )
+    assert res_accum.decision == "ACCUMULATE"
+    assert res_accum.recommended_action == "Accumulate"
+
+    # Same qualified holding mid-month -> shows "ACCUMULATE (next monthly review)"
+    res_mid_month = evaluate_signal(
+        current_price=110.0,
+        dma_50=105.0,
+        dma_200=100.0,
+        thesis_text="Intact thesis",
+        conviction=5.0,
+        invalidation_price=70.0,
+        high_52w=120.0,
+        dma_200_rising=True,
+        vol_adj_return_6m=1.2,
+        vol_adj_return_12m=1.1,
+        is_month_end=False,
+        stock_weight=3.0,
+        sector_risk_exposure=15.0,
+    )
+    assert res_mid_month.decision == "ACCUMULATE"
+    assert res_mid_month.recommended_action == "ACCUMULATE (next monthly review)"

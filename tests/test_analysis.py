@@ -3,8 +3,10 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
+import pytest
 
 import analysis
+from config import RiskConfig
 
 
 
@@ -829,6 +831,183 @@ def test_backtest_engine_simulation_and_report(tmp_path):
     assert "Buy-and-Hold" in report
     assert "Benchmark: Nifty 50" in report
     assert (tmp_path / "test_backtest_summary.md").exists()
+
+
+# ==============================================================================
+# PART 5 DEDICATED TESTS: Sector Excess, Minimum Trade, As-Of Check, Thesis
+# ==============================================================================
+
+def test_sector_excess_pro_rata_trims():
+    # Holdings at 20/5/3% in a sector capped at 25% have trims that sum to the 3% excess, split 20:5:3.
+    # Total portfolio value = 2,800,000. Price = 1,000 for each holding.
+    # Other sectors are each <= 25% (Auto: 24%, Infra: 24%, Pharma: 24%)
+    df = pd.DataFrame([
+        {"Stock Symbol": "STKA", "Sector": "Tech", "Weight_%": 20.0, "Current_Value": 560000.0, "Qty": 560, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "STKB", "Sector": "Tech", "Weight_%": 5.0, "Current_Value": 140000.0, "Qty": 140, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "STKC", "Sector": "Tech", "Weight_%": 3.0, "Current_Value": 84000.0, "Qty": 84, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "OTH1", "Sector": "Auto", "Weight_%": 24.0, "Current_Value": 672000.0, "Qty": 672, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "OTH2", "Sector": "Infra", "Weight_%": 24.0, "Current_Value": 672000.0, "Qty": 672, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "OTH3", "Sector": "Pharma", "Weight_%": 24.0, "Current_Value": 672000.0, "Qty": 672, "Valuation_Price": 1000.0},
+    ])
+    total_val = 2800000.0
+    config = RiskConfig(max_sector_pct=25.0)
+
+    # 1. Check excess weight percentage
+    pct_map = analysis.compute_group_excess_pct(df, config=config, risk_group_exposures={})
+    assert pct_map["STKA"] == pytest.approx(3.0 * (20.0 / 28.0), rel=1e-4)
+    assert pct_map["STKB"] == pytest.approx(3.0 * (5.0 / 28.0), rel=1e-4)
+    assert pct_map["STKC"] == pytest.approx(3.0 * (3.0 / 28.0), rel=1e-4)
+    assert pct_map["OTH1"] == 0.0
+    assert pct_map["OTH2"] == 0.0
+    assert pct_map["OTH3"] == 0.0
+
+    # Trims sum to the 3% excess
+    total_excess_pct = pct_map["STKA"] + pct_map["STKB"] + pct_map["STKC"]
+    assert total_excess_pct == pytest.approx(3.0, rel=1e-4)
+
+    # Split is 20:5:3
+    ratio_a = pct_map["STKA"] / 20.0
+    ratio_b = pct_map["STKB"] / 5.0
+    ratio_c = pct_map["STKC"] / 3.0
+    assert ratio_a == pytest.approx(ratio_b, rel=1e-4)
+    assert ratio_b == pytest.approx(ratio_c, rel=1e-4)
+
+    # 2. Check excess share counts
+    shares_map = analysis.compute_group_excess_shares(df, total_portfolio_value=total_val, config=config, risk_group_exposures={})
+    assert shares_map["STKA"] == 60
+    assert shares_map["STKB"] == 15
+    assert shares_map["STKC"] == 9
+    assert shares_map["STKA"] + shares_map["STKB"] + shares_map["STKC"] == 84  # 84 sh * 1000 = 84,000 (3% of 2.8M)
+
+
+def test_minimum_trade_suppression_and_consolidation_exception():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    risk_manager = MagicMock()
+    config = RiskConfig(minimum_trade_value=10000.0, max_position_pct=8.0)
+
+    # 1. TRIM below ₹10,000 -> "Hold (below minimum trade)"
+    eval_trim = SimpleNamespace(
+        decision="TRIM",
+        recommended_action="Trim",
+        rationale="trailing stop hit",
+        trailing_stop_hit=True,
+        conviction=4.0,
+    )
+    # 5 shares @ 1000 = ₹5,000 (< 10,000)
+    act_trim = analysis.size_action(
+        eval_trim,
+        qty=15,
+        price=1000.0,
+        total_value=500000.0,
+        stock_weight=3.0,
+        sector="Tech",
+        sector_weight=10.0,
+        atr_value=50.0,
+        risk_manager=risk_manager,
+        symbol="TINY",
+        config=config,
+    )
+    assert act_trim == "Hold (below minimum trade)"
+
+    # 2. Full exit (SELL) below ₹10,000 WITHOUT consolidation (e.g. conviction 5/5 or weight >= 1%) -> suppressed
+    eval_sell_high_conv = SimpleNamespace(
+        decision="SELL",
+        recommended_action="Exit",
+        rationale="invalidation breached",
+        conviction=5.0,  # high conviction, not a consolidation candidate
+        trailing_stop_hit=False,
+    )
+    # Position value = 8 shares @ 1000 = ₹8,000 (< 10,000), weight 0.8%
+    act_sell_suppressed = analysis.size_action(
+        eval_sell_high_conv,
+        qty=8,
+        price=1000.0,
+        total_value=1000000.0,
+        stock_weight=0.8,
+        sector="Tech",
+        sector_weight=10.0,
+        atr_value=50.0,
+        risk_manager=risk_manager,
+        symbol="TAIL",
+        config=config,
+        is_consolidation=False,
+    )
+    assert act_sell_suppressed == "Hold (below minimum trade)"
+
+    # 3. Full exit (SELL) below ₹10,000 WITH consolidation (weight < 1.0% and conviction < 5) -> allowed!
+    eval_sell_consolidation = SimpleNamespace(
+        decision="SELL",
+        recommended_action="Exit",
+        rationale="invalidation breached",
+        conviction=3.0,  # conviction < 5 and weight < 1%
+        trailing_stop_hit=False,
+    )
+    act_sell_allowed = analysis.size_action(
+        eval_sell_consolidation,
+        qty=8,
+        price=1000.0,
+        total_value=1000000.0,
+        stock_weight=0.8,
+        sector="Tech",
+        sector_weight=10.0,
+        atr_value=50.0,
+        risk_manager=risk_manager,
+        symbol="TAIL",
+        config=config,
+        is_consolidation=True,
+    )
+    assert act_sell_allowed.startswith("Exit all 8 sh")
+
+
+def test_as_of_check():
+    config = RiskConfig(portfolio_as_of="2026-09-26", price_mismatch_pct=20.0, max_price_to_dma_ratio=2.5)
+
+    # A 40% move since 2026-09-26 with matching as-of close -> NOT flagged
+    # Broker price = 100.0, as-of close on 2026-09-26 = 100.0 (gap = 0%)
+    # Live price today = 140.0 (+40% real market move since as-of date)
+    issue_match = analysis.price_data_issue(
+        live_price=140.0,
+        dma_200=120.0,
+        broker_price=100.0,
+        config=config,
+        as_of_price=100.0,
+    )
+    assert issue_match is None
+
+    # An as-of close 40% off the broker price -> FLAGGED
+    # Broker price = 100.0, as-of close = 140.0 (40% gap on that date -> data error / corporate action)
+    issue_mismatch = analysis.price_data_issue(
+        live_price=140.0,
+        dma_200=120.0,
+        broker_price=100.0,
+        config=config,
+        as_of_price=140.0,
+    )
+    assert issue_mismatch is not None
+    assert "differs from broker price" in issue_mismatch
+    assert "+40.0%" in issue_mismatch
+
+
+def test_thesis_invalidated_rows_unchanged():
+    # Verify that currently invalidated holdings have their Invalidation_Price preserved exactly
+    expected_invalidation_prices = {
+        "LIC": 790.25,
+        "WIPRO": 208.04,
+        "GUJGA": 430.75,
+        "SJVLIM": 80.58,
+        "ICIPSE": 231.16,
+        "ICIGOL": 131.80,
+        "JSWENE": 468.00,
+        "NTPGRE": 99.36,
+        "HINPET": 342.25,
+    }
+    thesis_df = pd.read_csv("thesis.csv").set_index("Stock Symbol")
+    for sym, exp_inv in expected_invalidation_prices.items():
+        assert sym in thesis_df.index
+        actual_inv = float(thesis_df.loc[sym, "Invalidation_Price"])
+        assert actual_inv == pytest.approx(exp_inv), f"{sym} Invalidation_Price changed from {exp_inv} to {actual_inv}"
+
 
 
 
