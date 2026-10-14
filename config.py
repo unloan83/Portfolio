@@ -81,9 +81,12 @@ class RiskConfig:
     ltcg_exemption_limit: float = _float("LTCG_EXEMPTION_LIMIT", 125000.0)
     # Broad index ETFs exempt from trailing stops and single-stock stop-loss rules
     broad_index_etfs: tuple[str, ...] = ("ICINIF", "HDF250", "MIR150")
+    # Portfolio snapshot as-of date for verifying broker prices against historical closes
+    portfolio_as_of: str = os.getenv("PORTFOLIO_AS_OF", "2026-09-26")
 
 
 RISK_CONFIG = RiskConfig()
+PORTFOLIO_AS_OF = RISK_CONFIG.portfolio_as_of
 
 # Predefined Risk Factor Groups mapping symbols to thematic/structural risk buckets
 RISK_GROUPS: dict[str, list[str]] = {

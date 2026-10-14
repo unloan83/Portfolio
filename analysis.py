@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import yfinance as yf
 
-from config import RISK_CONFIG, RISK_GROUPS, RiskConfig
+from config import PORTFOLIO_AS_OF, RISK_CONFIG, RISK_GROUPS, RiskConfig
 from indicators import atr as compute_atr
 from risk_manager import RiskManager, trim_quantity
 from signal_engine import DATA_FAILURE_TRENDS, evaluate_signal
@@ -85,6 +85,7 @@ def fetch_market_data(yf_ticker: str) -> dict:
         "dma_200_20_ago": None,
         "vol_adj_return_6m": None,
         "vol_adj_return_12m": None,
+        "as_of_close": None,
     }
     if yf_ticker in ('UNLISTED', 'TODO_VERIFY'):
         result["trend_override"] = "NO_TICKER"
@@ -165,6 +166,19 @@ def fetch_market_data(yf_ticker: str) -> dict:
             atr_series = compute_atr(data.rename(columns={"High": "high", "Low": "low", "Close": "close"}))
             if not atr_series.empty and pd.notna(atr_series.iloc[-1]):
                 result["atr"] = float(atr_series.iloc[-1])
+
+        result["as_of_close"] = None
+        if not clean_close.empty:
+            try:
+                as_of_dt = pd.to_datetime(RISK_CONFIG.portfolio_as_of)
+                idx = clean_close.index
+                if getattr(idx, "tz", None) is not None:
+                    idx = idx.tz_localize(None)
+                prior = clean_close[idx <= as_of_dt]
+                if not prior.empty:
+                    result["as_of_close"] = float(prior.iloc[-1])
+            except Exception:
+                result["as_of_close"] = None
     except Exception as exc:
         result["trend_override"] = "FETCH_ERROR"
         print(f"[warn] ({yf_ticker}) {type(exc).__name__}: {exc}")
@@ -176,15 +190,19 @@ def price_data_issue(
     dma_200: Optional[float],
     broker_price: Optional[float],
     config: RiskConfig = RISK_CONFIG,
+    as_of_price: Optional[float] = None,
 ) -> Optional[str]:
     """Why the fetched price can't be trusted, or None if it passes the checks."""
     if live_price is None or live_price <= 0:
         return None
-    if broker_price is not None and pd.notna(broker_price) and broker_price > 0:
-        gap_pct = (live_price / broker_price - 1) * 100
+    # Compare broker price with Yahoo's close on the portfolio as-of date (nearest prior trading day)
+    check_price = as_of_price if as_of_price is not None and as_of_price > 0 else live_price
+    if broker_price is not None and pd.notna(broker_price) and broker_price > 0 and check_price is not None and check_price > 0:
+        gap_pct = (check_price / broker_price - 1) * 100
         if abs(gap_pct) > config.price_mismatch_pct:
+            date_label = f"as-of ({config.portfolio_as_of})" if as_of_price is not None else "live"
             return (
-                f"Live price ₹{live_price:.2f} differs from broker price ₹{broker_price:.2f} "
+                f"{date_label.capitalize()} price ₹{check_price:.2f} differs from broker price ₹{broker_price:.2f} "
                 f"by {gap_pct:+.1f}% (limit ±{config.price_mismatch_pct:.0f}%); check ticker or corporate action."
             )
     if dma_200 is not None and dma_200 > 0:
@@ -523,7 +541,13 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         md = fetch_market_data(TICKER_MAP.get(broker_symbol, f"{broker_symbol}.NS"))
         md["issue"] = None
         if md["trend_override"] is None:
-            md["issue"] = price_data_issue(md["price"], md["dma_200"], row["Current Market Price"])
+            md["issue"] = price_data_issue(
+                live_price=md["price"],
+                dma_200=md["dma_200"],
+                broker_price=row["Current Market Price"],
+                config=RISK_CONFIG,
+                as_of_price=md.get("as_of_close"),
+            )
             if md["issue"]:
                 print(f"[warn] {broker_symbol}: {md['issue']}")
         market[broker_symbol] = md
