@@ -48,6 +48,26 @@ class RiskConfig:
     max_price_to_dma_ratio: float = _float("MAX_PRICE_TO_DMA_RATIO", 2.5)
     # Trailing stop distance from 52-week high in multiples of ATR (default 3x ATR).
     trailing_stop_atr_multiple: float = _float("TRAILING_STOP_ATR_MULTIPLE", 3.0)
+    # Minimum total return % to arm the trailing stop (Kaminski & Lo momentum lock-in)
+    trailing_min_gain_pct: float = _float("TRAILING_MIN_GAIN_PCT", 50.0)
+    # Minimum drawdown % from 52-week high required to fire trailing stop (AUT/ACFR stop-loss evidence)
+    trailing_drawdown_pct: float = _float("TRAILING_DRAWDOWN_PCT", 30.0)
+    # Multiple of ATR14 below 52-week high required for trailing stop distance
+    trailing_atr_multiple: float = _float("TRAILING_ATR_MULTIPLE", 3.0)
+    # Fraction of position trimmed when trailing stop fires (1/3 for long-term compounding)
+    trailing_trim_fraction: float = _float("TRAILING_TRIM_FRACTION", 1.0 / 3.0)
+    # Consecutive daily closes below invalidation price required to escalate REVIEW to SELL
+    invalidation_confirm_closes: int = _int("INVALIDATION_CONFIRM_CLOSES", 3)
+    # Percentage breach below invalidation price for immediate single-close SELL escalation
+    invalidation_gap_pct: float = _float("INVALIDATION_GAP_PCT", 10.0)
+    # Percentage below 200-DMA required to enter trend breakdown REVIEW
+    dma_200_breach_pct: float = _float("DMA_200_BREACH_PCT", 3.0)
+    # Consecutive daily closes below 200-DMA threshold required to enter trend REVIEW
+    dma_200_breach_sessions: int = _int("DMA_200_BREACH_SESSIONS", 20)
+    # Percentage above 200-DMA required to exit trend REVIEW under hysteresis band
+    dma_200_exit_pct: float = _float("DMA_200_EXIT_PCT", 2.0)
+    # Maximum percentage distance below 52-week high allowed for ACCUMULATE
+    accumulate_high_52w_pct: float = _float("ACCUMULATE_HIGH_52W_PCT", 20.0)
     # Maximum risk factor group cap (default 25%)
     max_risk_group_pct: float = _float("MAX_RISK_GROUP_PCT", 25.0)
     # Core/Satellite structure targets
@@ -57,6 +77,8 @@ class RiskConfig:
     stcg_rate: float = _float("STCG_RATE", 0.20)
     ltcg_rate: float = _float("LTCG_RATE", 0.125)
     ltcg_exemption_limit: float = _float("LTCG_EXEMPTION_LIMIT", 125000.0)
+    # Broad index ETFs exempt from trailing stops and single-stock stop-loss rules
+    broad_index_etfs: tuple[str, ...] = ("ICINIF", "HDF250", "MIR150")
 
 
 RISK_CONFIG = RiskConfig()

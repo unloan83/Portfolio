@@ -67,8 +67,25 @@ def adjust_unadjusted_splits(history: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_market_data(yf_ticker: str) -> dict:
-    """Price, 50/200 DMA, 14-day ATR, 52-week High and ROE for one ticker; failures are tagged."""
-    result = {"price": None, "dma_50": None, "dma_200": None, "atr": None, "roe": None, "high_52w": None, "trend_override": None}
+    """Price, 50/200 DMA, 14-day ATR, 52-week High, ROE, and trend metrics for one ticker; failures are tagged."""
+    result = {
+        "price": None,
+        "dma_50": None,
+        "dma_200": None,
+        "atr": None,
+        "roe": None,
+        "high_52w": None,
+        "trend_override": None,
+        "history": None,
+        "is_friday_close": False,
+        "is_month_end": False,
+        "sessions_below_200dma": 0,
+        "sma_10_month": None,
+        "dma_200_rising": True,
+        "dma_200_20_ago": None,
+        "vol_adj_return_6m": None,
+        "vol_adj_return_12m": None,
+    }
     if yf_ticker in ('UNLISTED', 'TODO_VERIFY'):
         result["trend_override"] = "NO_TICKER"
         return result
@@ -90,8 +107,56 @@ def fetch_market_data(yf_ticker: str) -> dict:
             result["trend_override"] = "NO_DATA"
             return result
         result["price"] = float(clean_close.iloc[-1])
-        result["dma_50"] = float(clean_close.rolling(window=50).mean().iloc[-1])
-        result["dma_200"] = float(clean_close.rolling(window=200).mean().iloc[-1])
+        dma_50_series = clean_close.rolling(window=50).mean()
+        dma_200_series = clean_close.rolling(window=200).mean()
+        result["dma_50"] = float(dma_50_series.iloc[-1])
+        result["dma_200"] = float(dma_200_series.iloc[-1])
+        result["history"] = clean_close
+
+        if hasattr(clean_close.index, "dayofweek"):
+            result["is_friday_close"] = bool(clean_close.index[-1].dayofweek == 4)
+            try:
+                next_bday = clean_close.index[-1] + pd.offsets.BDay(1)
+                result["is_month_end"] = bool(next_bday.month != clean_close.index[-1].month)
+            except Exception:
+                result["is_month_end"] = False
+
+        if os.getenv("IS_MONTH_END"):
+            result["is_month_end"] = (os.getenv("IS_MONTH_END", "").strip().lower() in ("true", "1", "yes"))
+
+        if len(dma_200_series.dropna()) >= 21:
+            val_20_ago = float(dma_200_series.dropna().iloc[-21])
+            result["dma_200_20_ago"] = val_20_ago
+            result["dma_200_rising"] = bool(result["dma_200"] > val_20_ago)
+
+        breach_cutoff = dma_200_series * (1.0 - RISK_CONFIG.dma_200_breach_pct / 100.0)
+        c_sessions = 0
+        for c_px, b_px in zip(reversed(clean_close), reversed(breach_cutoff)):
+            if pd.notna(c_px) and pd.notna(b_px) and c_px < b_px:
+                c_sessions += 1
+            else:
+                break
+        result["sessions_below_200dma"] = c_sessions
+
+        if len(clean_close) >= 210:
+            result["sma_10_month"] = float(clean_close.iloc[-210:].mean())
+        else:
+            result["sma_10_month"] = result["dma_200"]
+
+        if len(clean_close) >= 126:
+            r6 = float(clean_close.iloc[-1] / clean_close.iloc[-126] - 1.0)
+            std6 = float(clean_close.iloc[-126:].pct_change().dropna().std() * (252 ** 0.5))
+            result["vol_adj_return_6m"] = (r6 / std6) if std6 > 0 else (1.0 if r6 > 0 else -1.0)
+        else:
+            result["vol_adj_return_6m"] = 1.0
+
+        if len(clean_close) >= 200:
+            r12 = float(clean_close.iloc[-1] / clean_close.iloc[0] - 1.0)
+            std12 = float(clean_close.pct_change().dropna().std() * (252 ** 0.5))
+            result["vol_adj_return_12m"] = (r12 / std12) if std12 > 0 else (1.0 if r12 > 0 else -1.0)
+        else:
+            result["vol_adj_return_12m"] = 1.0
+
         if "High" in data.columns and not data["High"].dropna().empty:
             result["high_52w"] = float(data["High"].max())
         else:
@@ -176,10 +241,8 @@ def size_action(
         if sector_weight > config.max_sector_pct:
             target_weight = max(0.0, stock_weight - (sector_weight - config.max_sector_pct))
             shares = max(shares, trim_quantity(qty, price, total_value, target_weight))
-        if eval_res.is_overextended:
-            shares = max(shares, math.ceil(qty * config.overextension_trim_fraction))
         if getattr(eval_res, "trailing_stop_hit", False):
-            shares = max(shares, math.ceil(qty * 0.5))
+            shares = max(shares, math.ceil(qty * config.trailing_trim_fraction))
         shares = int(min(shares, qty))
         if shares <= 0:
             return action
@@ -190,6 +253,8 @@ def size_action(
         return f"Exit all {int(qty)} sh (~₹{qty * price:,.0f})"
 
     if decision in ("ACCUMULATE", "BUY"):
+        if action == "ACCUMULATE (next monthly review)":
+            return action
         if atr_value is None or atr_value <= 0:
             return f"{action} — size manually (ATR unavailable)"
         sizing = risk_manager.size_position(
@@ -198,8 +263,6 @@ def size_action(
         if not sizing.approved:
             return f"{action} — no size: {sizing.reason}"
         shares = sizing.quantity
-        if action == "Add on weakness (small)":
-            shares = max(1, shares // 2)
         return (
             f"{action}: buy {shares} sh (~₹{shares * price:,.0f}), "
             f"stop ₹{sizing.stop_price:.2f}, target ₹{sizing.target_price:.2f}"
@@ -298,6 +361,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
                         "conviction": t_row.get("Conviction"),
                         # Invalidation_Price is anchored to Avg_Cost at entry and does not adjust for unrealized gains — it is a thesis-broken trigger, not a trailing profit-protection stop.
                         "invalidation_price": t_row.get("Invalidation_Price"),
+                        "role": str(t_row.get("role", t_row.get("Role", "core"))).strip().lower(),
                     }
         except Exception as exc:
             print(f"[warn] Error reading thesis file {thesis_file}: {exc}")
@@ -325,6 +389,8 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
                                 last_decisions[sym] = "ACCUMULATE"
                             elif "TRIM" in s_str:
                                 last_decisions[sym] = "TRIM"
+                            elif "REVIEW" in s_str:
+                                last_decisions[sym] = "REVIEW"
                             else:
                                 last_decisions[sym] = "HOLD"
         except Exception as exc:
@@ -454,6 +520,18 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             high_52w=md.get("high_52w"),
             atr=md.get("atr"),
             risk_group_exposure=stock_rg_exposure,
+            symbol=broker_symbol,
+            role=t_info.get("role", "core"),
+            is_month_end=md.get("is_month_end", False),
+            is_friday_close=md.get("is_friday_close", False),
+            price_history=md.get("history"),
+            sessions_below_200dma=md.get("sessions_below_200dma", 0),
+            sma_10_month=md.get("sma_10_month"),
+            in_dma_review=(last_decisions.get(broker_symbol) == "REVIEW"),
+            dma_200_rising=md.get("dma_200_rising"),
+            dma_200_20_ago=md.get("dma_200_20_ago"),
+            vol_adj_return_6m=md.get("vol_adj_return_6m"),
+            vol_adj_return_12m=md.get("vol_adj_return_12m"),
         )
         signal = eval_res.signal
         recommended_action = size_action(
@@ -535,8 +613,8 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
         last_dec = last_decisions.get(broker_symbol)
         decision_changed = (last_dec != decision)
         crossed_into_alert = (
-            decision in ("SELL", "TRIM")
-            and last_dec not in ("SELL", "TRIM")
+            decision in ("SELL", "TRIM", "REVIEW")
+            and last_dec not in ("SELL", "TRIM", "REVIEW")
         )
 
         if is_full_review or decision_changed or crossed_into_alert:
@@ -546,6 +624,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
                 "HOLD": "🟡",
                 "TRIM": "✂️",
                 "SELL": "🔴",
+                "REVIEW": "🔍",
                 "NO THESIS": "⚠️",
                 "NO DATA": "⚪",
                 "VERIFY DATA": "⚪",

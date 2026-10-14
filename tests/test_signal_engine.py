@@ -23,7 +23,7 @@ def test_signal_accumulate():
 
 
 def test_signal_strg_sell():
-    # Bearish breakdown: price < dma_200
+    # Bearish breakdown: 20 sessions > 3% below 200 DMA enters REVIEW with hysteresis
     res = evaluate_signal(
         current_price=90.0,
         dma_50=95.0,
@@ -31,10 +31,13 @@ def test_signal_strg_sell():
         roe=0.15,
         stock_sector="Banking",
         sector_risk_exposure=10.0,
+        sessions_below_200dma=20,
     )
-    assert res.signal == "🔴 STRG SELL"
+    assert res.signal == "🟡 REVIEW"
     assert res.technical_trend == "BEARISH"
-    assert "Below 200 DMA structural breakdown" in res.explanation
+    assert "200-DMA breakdown hysteresis review" in res.explanation
+    assert res.decision == "REVIEW"
+    assert res.recommended_action == "Review"
 
 
 def test_signal_sector_cap():
@@ -66,6 +69,7 @@ def test_signal_hold_peak_overextended():
     assert res.technical_trend == "BULLISH"
     assert res.is_overextended
     assert "Overextended" in res.explanation
+    assert "EXTENDED: don't add" in res.explanation
 
 
 def test_signal_roe_unknown():
@@ -114,6 +118,7 @@ def test_signal_no_thesis():
 
 
 def test_signal_thesis_invalidated():
+    # Core role with 1 close below level gives REVIEW
     res = evaluate_signal(
         current_price=80.0,
         dma_50=95.0,
@@ -121,14 +126,31 @@ def test_signal_thesis_invalidated():
         thesis_text="Strong retail growth",
         conviction=2.0,
         invalidation_price=85.0,
+        role="core",
     )
-    assert res.signal == "🔴 STRG SELL"
+    assert res.signal == "🟡 REVIEW"
     assert res.thesis_status == "INVALIDATED"
-    assert res.explanation == "thesis invalidated"
-    assert res.recommended_action == "Exit"
+    assert "invalidation breached" in res.explanation
+    assert res.decision == "REVIEW"
+    assert res.recommended_action == "Review"
+
+    # Tactical role keeps immediate hard stop (SELL)
+    res_tac = evaluate_signal(
+        current_price=80.0,
+        dma_50=95.0,
+        dma_200=100.0,
+        thesis_text="Tactical gold",
+        conviction=2.0,
+        invalidation_price=85.0,
+        role="tactical",
+    )
+    assert res_tac.signal == "🔴 STRG SELL"
+    assert res_tac.decision == "SELL"
+    assert res_tac.recommended_action == "Exit"
 
 
 def test_signal_bearish_pullback_strong_return():
+    # Pullback below 200-DMA: no longer "Add on weakness (small)", defaults to HOLD
     res = evaluate_signal(
         current_price=90.0,
         dma_50=95.0,
@@ -136,13 +158,16 @@ def test_signal_bearish_pullback_strong_return():
         total_return=30.0,
         thesis_text="Long term compounder",
         conviction=5.0,
+        roe=0.15,
     )
-    assert res.signal == "🟡 HOLD / TRIM WATCH"
-    assert res.explanation == "pullback within thesis, not a breakdown"
-    assert res.recommended_action == "Add on weakness (small)"
+    assert res.signal == "🟡 HOLD / PULLBACK"
+    assert "Pullback below 200-DMA" in res.explanation
+    assert res.decision == "HOLD"
+    assert res.recommended_action == "Hold"
 
 
 def test_signal_bearish_negative_return():
+    # BEARISH with negative return no longer auto-sells; it gives HOLD (or REVIEW if 20 sessions below)
     res = evaluate_signal(
         current_price=90.0,
         dma_50=95.0,
@@ -150,12 +175,11 @@ def test_signal_bearish_negative_return():
         total_return=-10.0,
         thesis_text="Long term compounder",
         conviction=3.0,
+        roe=0.15,
     )
-    assert res.signal == "🔴 STRG SELL"
-    assert res.explanation == "breakdown + thesis stress"
-    # SELL decision must never be paired with a "Hold" action.
-    assert res.decision == "SELL"
-    assert res.recommended_action == "Exit"
+    assert res.signal == "🟡 HOLD / PULLBACK"
+    assert res.decision == "HOLD"
+    assert res.recommended_action == "Hold"
 
 
 def test_signal_thesis_nan_and_unset_handling():
@@ -186,20 +210,33 @@ def test_signal_thesis_intact_and_invalidated_matrix():
     assert res_intact.thesis_status == "INTACT"
     assert res_intact.signal == "🟢 ACCUMULATE"
 
-    # Invalidated thesis with low conviction -> Exit
-    res_inv = evaluate_signal(
+    # Tactical role -> Exit immediately on breach
+    res_tac = evaluate_signal(
         current_price=75.0,
         dma_50=95.0,
         dma_200=100.0,
         thesis_text="Turnaround play",
         conviction=2.0,
         invalidation_price=80.0,
+        role="tactical",
     )
-    assert res_inv.thesis_status == "INVALIDATED"
-    assert res_inv.signal == "🔴 STRG SELL"
-    assert res_inv.recommended_action == "Exit"
+    assert res_tac.thesis_status == "INVALIDATED"
+    assert res_tac.signal == "🔴 STRG SELL"
+    assert res_tac.recommended_action == "Exit"
 
-
+    # Core role with 1 close below -> REVIEW
+    res_core = evaluate_signal(
+        current_price=75.0,
+        dma_50=95.0,
+        dma_200=100.0,
+        thesis_text="Turnaround play",
+        conviction=2.0,
+        invalidation_price=80.0,
+        role="core",
+    )
+    assert res_core.thesis_status == "INVALIDATED"
+    assert res_core.signal == "🟡 REVIEW"
+    assert res_core.recommended_action == "Review"
 
 
 def test_no_data_uses_broker_price_for_thesis_invalidation():
@@ -212,12 +249,28 @@ def test_no_data_uses_broker_price_for_thesis_invalidation():
         conviction=4.0,
         invalidation_price=240.0,
         fallback_price=230.0,
+        role="core",
     )
     assert res.signal == "⚪ NO DATA"
     assert res.thesis_status == "INVALIDATED"
-    assert res.decision == "SELL"
-    assert res.recommended_action == "Exit"
-    assert "Broker price ₹230.00" in res.rationale
+    assert res.decision == "REVIEW"
+    assert res.recommended_action == "Review"
+    assert "invalidation breached on broker price" in res.rationale
+
+    # Tactical role escalates to SELL on broker price
+    res_tac = evaluate_signal(
+        current_price=None,
+        dma_50=None,
+        dma_200=None,
+        technical_trend_override="NO_DATA",
+        thesis_text="Tactical gold",
+        conviction=4.0,
+        invalidation_price=240.0,
+        fallback_price=230.0,
+        role="tactical",
+    )
+    assert res_tac.decision == "SELL"
+    assert res_tac.recommended_action == "Exit"
 
 
 def test_no_data_without_breach_stays_no_data():
@@ -286,7 +339,8 @@ def test_recommended_action_always_matches_decision(kwargs):
     expected = {
         "SELL": {"Exit"},
         "TRIM": {"Trim"},
-        "ACCUMULATE": {"Accumulate", "Add on weakness (small)"},
+        "REVIEW": {"Review"},
+        "ACCUMULATE": {"Accumulate", "ACCUMULATE (next monthly review)"},
         "HOLD": {"Hold"},
     }[res.decision]
     assert res.recommended_action in expected

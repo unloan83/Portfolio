@@ -253,6 +253,7 @@ def test_report_gives_sized_actions(tmp_path, monkeypatch):
         monkeypatch.setitem(analysis.TICKER_MAP, sym, f"{sym}.NS")
         monkeypatch.setitem(analysis.SECTOR_MAP, sym, f"Sector{i}")
     monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+    monkeypatch.setenv("IS_MONTH_END", "1")
 
     analysis.run_weekly_analysis(notify_fn=MagicMock())
 
@@ -287,37 +288,39 @@ def test_sector_map_etfs_and_financials():
 
 
 class MockPullbackTicker:
-    """Ticker that rose to 250, then pulled back to 210 with ATR ~10."""
+    """Ticker that rose to 250, then pulled back to 160 with ATR ~10 (>30% drawdown, +60% gain)."""
 
     def __init__(self, symbol: str):
         self.symbol = symbol
         self.info = {"returnOnEquity": 0.20}
 
     def history(self, period: str) -> pd.DataFrame:
-        prices = list(np.linspace(100, 250, 230)) + list(np.linspace(250, 210, 20))
+        prices = list(np.linspace(100, 250, 230)) + list(np.linspace(250, 160, 20))
         close = pd.Series(prices)
         return pd.DataFrame({"Close": close, "High": close + 5, "Low": close - 5})
 
 
 def test_trailing_stop_rule_trims_half_winner(tmp_path, monkeypatch):
-    # WINNER holding: 80 shares @ cost 100, current price ~210, 52w high 255, ATR 10
+    # WINNER holding: 80 shares @ cost 100, current price ~160, 52w high 255, ATR 10
     # Invalidation price 80.
-    # 52w high - 3*ATR = 255 - 30 = 225.
-    # Price 210 is below trailing stop 225, but well above invalidation 80.
+    # 52w high - max(30%, 3*ATR) = 255 - max(76.5, 30) = 178.5.
+    # Price 160 is below trailing stop 178.5, well above invalidation 80.
+    # Total return: +60% >= 50% minimum gain.
     portfolio = pd.DataFrame(
         [
-            {"Stock Symbol": "WINNER", "Company Name": "Winner Co", "Qty": 80, "Average Cost Price": 100, "Current Market Price": 210},
-            {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 1000, "Average Cost Price": 100, "Current Market Price": 210},
+            {"Stock Symbol": "WINNER", "Company Name": "Winner Co", "Qty": 80, "Average Cost Price": 100, "Current Market Price": 160},
+            {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 1000, "Average Cost Price": 100, "Current Market Price": 160},
         ]
     )
     portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
     pd.DataFrame(
         [
-            {"Stock Symbol": "WINNER", "Thesis": "Growth thesis", "Conviction": "4/5", "Invalidation_Price": 80, "Last_Updated": "2026-10-01"},
-            {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "5/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "WINNER", "Thesis": "Growth thesis", "Conviction": "4/5", "Invalidation_Price": 80, "Last_Updated": "2026-10-01", "role": "core"},
+            {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "5/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01", "role": "core"},
         ]
     ).to_csv(tmp_path / "thesis.csv", index=False)
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("IS_MONTH_END", "1")
     monkeypatch.setitem(analysis.TICKER_MAP, "WINNER", "WINNER.NS")
     monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
     monkeypatch.setitem(analysis.SECTOR_MAP, "WINNER", "Auto")
@@ -330,8 +333,8 @@ def test_trailing_stop_rule_trims_half_winner(tmp_path, monkeypatch):
     winner_row = tracking.loc["WINNER"]
     assert winner_row["Decision"] == "TRIM"
     assert winner_row["Rationale"] == "trailing stop hit"
-    # Sells half of 80 shares = 40 shares
-    assert winner_row["Recommended_Action"].startswith("Trim 40 sh")
+    # Sells 1/3 of 80 shares = 27 shares
+    assert winner_row["Recommended_Action"].startswith("Trim 27 sh")
 
     readme = (tmp_path / "README.md").read_text()
     assert "| Trailing Stop" in readme
