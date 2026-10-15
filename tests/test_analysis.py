@@ -334,7 +334,7 @@ def test_trailing_stop_rule_trims_half_winner(tmp_path, monkeypatch):
     tracking = pd.read_csv(tmp_path / "re-engineering.csv").set_index("Stock_Symbol")
     winner_row = tracking.loc["WINNER"]
     assert winner_row["Decision"] == "TRIM"
-    assert winner_row["Rationale"] == "trailing stop hit"
+    assert winner_row["Rationale"].startswith("trailing stop hit")
     # Sells 1/3 of 300 shares = 100 shares
     assert winner_row["Recommended_Action"].startswith("Trim 100 sh")
 
@@ -1176,3 +1176,19 @@ def test_no_lookahead_feature_truncation():
 
 
 
+
+
+def test_quant_validation_doc_matches_config():
+    """reports/quant_validation.md must quote the thresholds the code actually uses."""
+    import re
+    from pathlib import Path
+    from config import RISK_CONFIG
+
+    doc = (Path(__file__).resolve().parent.parent / "reports" / "quant_validation.md").read_text()
+    pct = re.search(r"\\pm (\d+(?:\.\d+)?)\\%\$ \(`price_mismatch_pct`\)", doc)
+    assert pct and float(pct.group(1)) == RISK_CONFIG.price_mismatch_pct
+    ratio = re.search(r"\(\$> (\d+(?:\.\d+)?)\\times\$ or \$< (\d+(?:\.\d+)?)\\times\$ 200-DMA, `max_price_to_dma_ratio`\)", doc)
+    assert ratio
+    assert float(ratio.group(1)) == RISK_CONFIG.max_price_to_dma_ratio
+    assert abs(float(ratio.group(2)) - 1 / RISK_CONFIG.max_price_to_dma_ratio) < 1e-9
+    assert "not** caught" in doc

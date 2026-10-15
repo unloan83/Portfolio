@@ -67,6 +67,9 @@ class SignalEvaluationResult:
     data_status: str = "OK"
     trailing_stop: Optional[float] = None
     trailing_stop_hit: bool = False
+    # True while the 200-DMA / 10-month-SMA hysteresis REVIEW is active; callers
+    # feed it back as in_dma_review on the next evaluation.
+    dma_review_active: bool = False
 
 
 """
@@ -78,10 +81,14 @@ DECISION TREE:
    - Role core:
      - Escalate to SELL if: 3 consecutive daily closes below level, Friday close below level, or single close >= 10% below level -> Decision: "SELL", Action: "Exit"
      - Otherwise -> Decision: "REVIEW", Action: "Review", Reason: "invalidation breached, N of 3 closes"
-   - Fallback price (no technical data): gives REVIEW (unless role tactical -> SELL).
+   - Fallback price (no technical data): VERIFY DATA / NO DATA with the breach in the rationale
+     (the broker price never moves, so closes cannot confirm); tactical -> SELL.
+   PRECEDENCE: SELL > position-cap TRIM (> max_position_pct) / trailing-stop TRIM > REVIEW
+   > sector/risk-group TRIM > ACCUMULATE > HOLD.
 4. 200-DMA BREAKDOWN HYSTERESIS REVIEW:
    - Enter when close > 3% below 200-DMA for >= 20 sessions OR month-end close < 10-month SMA -> Decision: "REVIEW", Action: "Review"
    - Exit when close > 200-DMA + 2%
+   - Broad index ETFs use only the month-end 10-month SMA entry rule.
    - Never escalates to SELL.
 5. THESIS INTACT & NO REVIEW:
    - Trailing Stop hit (armed when total_return >= 50%; fires on month-end close at least max(30%, 3*ATR) below 52w high; index ETFs exempt; never on losers) -> Decision: "TRIM" (trim 1/3), Rationale: "trailing stop hit"
@@ -259,7 +266,13 @@ def evaluate_signal(
                 dma_review_active = True
         else:
             breach_level = dma_200 * (1.0 - config.dma_200_breach_pct / 100.0)
-            entered_by_sessions = (sessions_below_200dma >= config.dma_200_breach_sessions and current_price < breach_level)
+            # Broad index ETFs only use the month-end 10-month SMA rule: a
+            # 20-session single-stock trend rule is too noisy for an index.
+            entered_by_sessions = (
+                not is_index_etf
+                and sessions_below_200dma >= config.dma_200_breach_sessions
+                and current_price < breach_level
+            )
             entered_by_10m = (is_month_end and sma_10_month is not None and current_price < sma_10_month)
             dma_review_active = (entered_by_sessions or entered_by_10m)
 
@@ -371,12 +384,17 @@ def evaluate_signal(
         data_status = "OK"
 
     # 1. Decision Derivation Tree (Strict, Non-Contradictory)
+    # Precedence: SELL > position-cap / trailing-stop TRIM > REVIEW > sector/group TRIM
+    # > ACCUMULATE > HOLD. A cap breach or a fired profit stop is a concrete action
+    # that exists whatever the trend, so it must not be hidden behind a REVIEW.
+    position_cap_breach = stock_weight > config.max_position_pct
     if not has_technical_data:
+        # Without trustworthy live data the broker price never moves, so a
+        # core invalidation breach cannot "confirm" over closes: ask for a
+        # data check instead of sitting in REVIEW forever.
         if invalidation_escalated_to_sell:
             decision = "SELL"
-        elif invalidation_is_review:
-            decision = "REVIEW"
-        elif stock_weight > config.max_position_pct:
+        elif position_cap_breach:
             decision = "TRIM"
         elif data_status == "BAD DATA":
             decision = "VERIFY DATA"
@@ -386,15 +404,12 @@ def evaluate_signal(
         decision = "NO THESIS"
     elif invalidation_escalated_to_sell:
         decision = "SELL"
-    elif invalidation_is_review:
-        decision = "REVIEW"
-    elif trailing_stop_hit:
+    elif position_cap_breach or trailing_stop_hit:
         decision = "TRIM"
-    elif dma_review_active:
+    elif invalidation_is_review or dma_review_active:
         decision = "REVIEW"
     elif (
-        stock_weight > config.max_position_pct
-        or (sector_risk_exposure > config.max_sector_pct and stock_weight >= (config.max_position_pct / 2))
+        (sector_risk_exposure > config.max_sector_pct and stock_weight >= (config.max_position_pct / 2))
         or (risk_group_exposure > config.max_risk_group_pct and stock_weight >= (config.max_position_pct / 2))
     ):
         decision = "TRIM"
@@ -428,12 +443,15 @@ def evaluate_signal(
         if decision == "SELL":
             horizon_long_term = f"INVALIDATED — Broker price {fb_str} breached invalidation level {inv_str}"
             rationale = f"Thesis invalidated: Broker price {fb_str} <= invalidation price {inv_str}. {missing}."
-        elif decision == "REVIEW":
-            horizon_long_term = f"REVIEW — Broker price {fb_str} breached invalidation level {inv_str}"
-            rationale = f"invalidation breached on broker price (1 of {config.invalidation_confirm_closes} closes). {missing}."
         elif decision == "TRIM":
             horizon_long_term = "UNVERIFIED — Technical layer missing; risk limits require position trimming"
             rationale = f"Position cap breach: Weight {stock_weight:.1f}% exceeds max position limit ({config.max_position_pct:.1f}%); trim required. {missing}."
+        elif invalidation_is_review:
+            horizon_long_term = f"UNVERIFIED — Broker price {fb_str} breached invalidation level {inv_str}"
+            rationale = (
+                f"invalidation breached on broker price ({fb_str} <= {inv_str}); live price unreliable "
+                f"— verify before acting. {missing}."
+            )
         else:
             horizon_long_term = "UNVERIFIED — Technical layer missing"
             rationale = f"{missing}; evaluation incomplete."
@@ -467,12 +485,18 @@ def evaluate_signal(
                 rationale = "Review required"
         elif decision == "TRIM":
             horizon_long_term = f"INTACT — High conviction ({conv_str}) thesis intact; risk limits require position/sector trimming"
-            if trailing_stop_hit:
+            if position_cap_breach:
+                rationale = f"Position cap breach: Weight {stock_weight:.1f}% exceeds max position limit ({config.max_position_pct:.1f}%); trim required."
+                if invalidation_is_review:
+                    rationale += f"; also under REVIEW: invalidation breached, {consecutive_closes_below} of {config.invalidation_confirm_closes} closes"
+                elif dma_review_active:
+                    rationale += "; also under REVIEW: 200-DMA breakdown"
+            elif trailing_stop_hit:
                 ts_str = f"₹{trailing_stop:.2f}" if trailing_stop is not None else "N/A"
                 horizon_long_term = f"TRIM — Trailing stop hit ({ts_str}); profit protection"
                 rationale = "trailing stop hit"
-            elif stock_weight > config.max_position_pct:
-                rationale = f"Position cap breach: Weight {stock_weight:.1f}% exceeds max position limit ({config.max_position_pct:.1f}%); trim required."
+                if invalidation_is_review or dma_review_active:
+                    rationale += "; also under REVIEW"
             elif sector_risk_exposure > config.max_sector_pct:
                 rationale = f"Sector cap breach: {stock_sector} sector exposure ({sector_risk_exposure:.1f}%) exceeds sector limit ({config.max_sector_pct:.1f}%); trim holding ({stock_weight:.1f}% weight) for concentration risk control."
             elif risk_group_exposure > config.max_risk_group_pct:
@@ -528,6 +552,7 @@ def evaluate_signal(
         data_status=data_status,
         trailing_stop=trailing_stop,
         trailing_stop_hit=trailing_stop_hit,
+        dma_review_active=dma_review_active,
     )
 
 

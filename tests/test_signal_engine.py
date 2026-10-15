@@ -253,8 +253,9 @@ def test_no_data_uses_broker_price_for_thesis_invalidation():
     )
     assert res.signal == "⚪ NO DATA"
     assert res.thesis_status == "INVALIDATED"
-    assert res.decision == "REVIEW"
-    assert res.recommended_action == "Review"
+    # Broker price never moves, so closes cannot confirm: ask for a data check.
+    assert res.decision == "NO DATA"
+    assert res.recommended_action == "Verify price manually"
     assert "invalidation breached on broker price" in res.rationale
 
     # Tactical role escalates to SELL on broker price
@@ -637,3 +638,99 @@ def test_accumulate_and_extended_rules():
     )
     assert res_mid_month.decision == "ACCUMULATE"
     assert res_mid_month.recommended_action == "ACCUMULATE (next monthly review)"
+
+
+# --- Precedence, fallback and ETF REVIEW rules -----------------------------
+
+def _below_200dma_kwargs(**over):
+    """A core stock > 3% below its 200-DMA for 49 sessions with an intact thesis."""
+    kw = dict(
+        current_price=700.0, dma_50=730.0, dma_200=745.0,
+        total_return=-3.0, thesis_text="Core bank", conviction=5.0,
+        invalidation_price=600.0, sessions_below_200dma=49,
+        symbol="HDFBAN", role="core",
+    )
+    kw.update(over)
+    return kw
+
+
+def test_position_cap_trim_wins_over_dma_review():
+    res = evaluate_signal(**_below_200dma_kwargs(stock_weight=14.9))
+    assert res.dma_review_active
+    assert res.decision == "TRIM"
+    assert "Position cap breach" in res.rationale
+    assert "REVIEW" in res.rationale
+
+
+def test_dma_review_without_cap_breach_stays_review():
+    res = evaluate_signal(**_below_200dma_kwargs(stock_weight=4.0))
+    assert res.decision == "REVIEW"
+
+
+def test_bad_data_invalidation_breach_asks_for_verification_not_review():
+    res = evaluate_signal(
+        current_price=236.0, dma_50=240.0, dma_200=300.0,
+        thesis_text="City gas", conviction=3.0, invalidation_price=430.75,
+        fallback_price=401.15, data_issue="As-of price differs from broker price.",
+        stock_weight=0.5, role="core",
+    )
+    assert res.decision == "VERIFY DATA"
+    assert "live price unreliable" in res.rationale
+    assert "1 of" not in res.rationale
+
+
+def test_index_etf_ignores_20_session_rule_but_uses_10_month_rule():
+    kw = dict(current_price=254.0, dma_50=262.0, dma_200=268.0, total_return=-5.0,
+              thesis_text="Index core", conviction=4.0, invalidation_price=200.0,
+              sessions_below_200dma=24, symbol="ICINIF", sma_10_month=266.0)
+    assert evaluate_signal(**kw, is_month_end=False).decision != "REVIEW"
+    assert evaluate_signal(**kw, is_month_end=True).decision == "REVIEW"
+    # A single stock with the same numbers enters REVIEW on the session rule.
+    kw["symbol"] = "ONGC"
+    assert evaluate_signal(**kw, is_month_end=False).decision == "REVIEW"
+
+
+# --- Decision snapshot: one row per rule path; fails if any path changes -----
+
+_SNAPSHOT = [
+    # (name, kwargs, expected decision)
+    ("tactical stop", dict(current_price=124.0, dma_50=130.0, dma_200=132.0, total_return=-10.0,
+                           invalidation_price=131.8, role="tactical", conviction=2.0), "SELL"),
+    ("core 1 close below", dict(current_price=207.0, dma_50=215.0, dma_200=220.0, total_return=-12.0,
+                                invalidation_price=208.04, consecutive_closes_below=1, conviction=4.0), "REVIEW"),
+    ("core 3 closes below", dict(current_price=207.0, dma_50=215.0, dma_200=220.0, total_return=-12.0,
+                                 invalidation_price=208.04, consecutive_closes_below=3, conviction=4.0), "SELL"),
+    ("core 10% gap", dict(current_price=180.0, dma_50=215.0, dma_200=220.0, total_return=-20.0,
+                          invalidation_price=208.04, consecutive_closes_below=1, conviction=4.0), "SELL"),
+    ("cap breach in review", dict(current_price=700.0, dma_50=730.0, dma_200=745.0, total_return=-3.0,
+                                  invalidation_price=600.0, sessions_below_200dma=49, stock_weight=14.9,
+                                  conviction=5.0), "TRIM"),
+    ("trend review", dict(current_price=700.0, dma_50=730.0, dma_200=745.0, total_return=-3.0,
+                          invalidation_price=600.0, sessions_below_200dma=49, stock_weight=4.0,
+                          conviction=5.0), "REVIEW"),
+    ("trailing stop month-end", dict(current_price=160.0, dma_50=200.0, dma_200=170.0, total_return=60.0,
+                                     invalidation_price=80.0, high_52w=255.0, atr=10.0, is_month_end=True,
+                                     stock_weight=3.0, conviction=4.0), "TRIM"),
+    ("trailing stop mid-month", dict(current_price=160.0, dma_50=200.0, dma_200=170.0, total_return=60.0,
+                                     invalidation_price=80.0, high_52w=255.0, atr=10.0, is_month_end=False,
+                                     stock_weight=3.0, conviction=4.0), "HOLD"),
+    ("loser never trailing-trimmed", dict(current_price=160.0, dma_50=200.0, dma_200=170.0, total_return=-5.0,
+                                          invalidation_price=80.0, high_52w=255.0, atr=10.0, is_month_end=True,
+                                          stock_weight=3.0, conviction=4.0), "HOLD"),
+    ("accumulate", dict(current_price=1741.0, dma_50=1650.0, dma_200=1550.0, total_return=50.0,
+                        invalidation_price=1003.2, high_52w=1800.0, stock_weight=3.7, conviction=4.0,
+                        dma_200_rising=True, vol_adj_return_6m=0.8, vol_adj_return_12m=0.9), "ACCUMULATE"),
+    ("extended blocks accumulate", dict(current_price=2200.0, dma_50=1650.0, dma_200=1550.0, total_return=90.0,
+                                        invalidation_price=1003.2, high_52w=2200.0, stock_weight=3.7, conviction=4.0,
+                                        dma_200_rising=True, vol_adj_return_6m=0.8, vol_adj_return_12m=0.9), "HOLD"),
+    ("broker fallback breach", dict(current_price=None, dma_50=None, dma_200=None, technical_trend_override="NO_DATA",
+                                    invalidation_price=430.75, fallback_price=401.15, conviction=3.0), "NO DATA"),
+    ("no thesis", dict(current_price=110.0, dma_50=105.0, dma_200=100.0, thesis_text="NOT YET SET"), "NO THESIS"),
+]
+
+
+@pytest.mark.parametrize("name,kwargs,expected", _SNAPSHOT, ids=[s[0] for s in _SNAPSHOT])
+def test_decision_snapshot(name, kwargs, expected):
+    kwargs = dict(kwargs)
+    kwargs.setdefault("thesis_text", "Thesis")
+    assert evaluate_signal(**kwargs).decision == expected
