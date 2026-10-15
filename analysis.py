@@ -66,8 +66,110 @@ def adjust_unadjusted_splits(history: pd.DataFrame) -> pd.DataFrame:
     return adjusted
 
 
+def compute_market_features(data: pd.DataFrame, config: RiskConfig = RISK_CONFIG) -> dict:
+    """Computes technical trend, momentum, and threshold features without lookahead bias.
+
+    Features computed on data[:t] are strictly equal to those computed on the full
+    series sliced at t.
+    """
+    res = {
+        "price": None,
+        "dma_50": None,
+        "dma_200": None,
+        "atr": None,
+        "high_52w": None,
+        "low_52w": None,
+        "is_friday_close": False,
+        "is_month_end": False,
+        "sessions_below_200dma": 0,
+        "sma_10_month": None,
+        "dma_200_rising": True,
+        "dma_200_20_ago": None,
+        "vol_adj_return_6m": None,
+        "vol_adj_return_12m": None,
+        "history": None,
+    }
+    if data.empty or "Close" not in data.columns:
+        return res
+
+    clean_close = data["Close"].dropna()
+    if len(clean_close) < 200:
+        return res
+
+    res["price"] = float(clean_close.iloc[-1])
+    dma_50_series = clean_close.rolling(window=50).mean()
+    dma_200_series = clean_close.rolling(window=200).mean()
+    res["dma_50"] = float(dma_50_series.iloc[-1])
+    res["dma_200"] = float(dma_200_series.iloc[-1])
+    res["history"] = clean_close
+
+    if hasattr(clean_close.index, "dayofweek"):
+        res["is_friday_close"] = bool(clean_close.index[-1].dayofweek == 4)
+        try:
+            next_bday = clean_close.index[-1] + pd.offsets.BDay(1)
+            res["is_month_end"] = bool(next_bday.month != clean_close.index[-1].month)
+        except Exception:
+            res["is_month_end"] = False
+
+    if os.getenv("IS_MONTH_END"):
+        res["is_month_end"] = (os.getenv("IS_MONTH_END", "").strip().lower() in ("true", "1", "yes"))
+
+    if len(dma_200_series.dropna()) >= 21:
+        val_20_ago = float(dma_200_series.dropna().iloc[-21])
+        res["dma_200_20_ago"] = val_20_ago
+        res["dma_200_rising"] = bool(res["dma_200"] > val_20_ago)
+
+    breach_cutoff = dma_200_series * (1.0 - config.dma_200_breach_pct / 100.0)
+    c_sessions = 0
+    for c_px, b_px in zip(reversed(clean_close.values), reversed(breach_cutoff.values)):
+        if pd.notna(c_px) and pd.notna(b_px) and c_px < b_px:
+            c_sessions += 1
+        else:
+            break
+    res["sessions_below_200dma"] = c_sessions
+
+    if len(clean_close) >= 210:
+        res["sma_10_month"] = float(clean_close.iloc[-210:].mean())
+    else:
+        res["sma_10_month"] = res["dma_200"]
+
+    if len(clean_close) >= 126:
+        r6 = float(clean_close.iloc[-1] / clean_close.iloc[-126] - 1.0)
+        std6 = float(clean_close.iloc[-126:].pct_change().dropna().std() * (252 ** 0.5))
+        res["vol_adj_return_6m"] = (r6 / std6) if std6 > 0 else (1.0 if r6 > 0 else -1.0)
+    else:
+        res["vol_adj_return_6m"] = 1.0
+
+    if len(clean_close) >= 200:
+        lookback_12m = 252 if len(clean_close) >= 252 else len(clean_close)
+        r12 = float(clean_close.iloc[-1] / clean_close.iloc[-lookback_12m] - 1.0)
+        ret_series = clean_close.iloc[-lookback_12m:].pct_change().dropna()
+        std12 = float(ret_series.std() * (252 ** 0.5)) if len(ret_series) > 1 else 0.0
+        res["vol_adj_return_12m"] = (r12 / std12) if std12 > 0 else (1.0 if r12 > 0 else -1.0)
+    else:
+        res["vol_adj_return_12m"] = 1.0
+
+    trailing_52w = data.iloc[-252:] if len(data) >= 252 else data
+    if "High" in data.columns and not trailing_52w["High"].dropna().empty:
+        res["high_52w"] = float(trailing_52w["High"].max())
+    else:
+        res["high_52w"] = float(clean_close.iloc[-252:].max() if len(clean_close) >= 252 else clean_close.max())
+
+    if "Low" in data.columns and not trailing_52w["Low"].dropna().empty:
+        res["low_52w"] = float(trailing_52w["Low"].min())
+    else:
+        res["low_52w"] = float(clean_close.iloc[-252:].min() if len(clean_close) >= 252 else clean_close.min())
+
+    if {"High", "Low"}.issubset(data.columns):
+        atr_series = compute_atr(data.rename(columns={"High": "high", "Low": "low", "Close": "close"}))
+        if not atr_series.empty and pd.notna(atr_series.iloc[-1]):
+            res["atr"] = float(atr_series.iloc[-1])
+
+    return res
+
+
 def fetch_market_data(yf_ticker: str) -> dict:
-    """Price, 50/200 DMA, 14-day ATR, 52-week High, ROE, and trend metrics for one ticker; failures are tagged."""
+    """Price, 50/200 DMA, 14-day ATR, 52-week High/Low, ROE, and trend metrics for one ticker; failures are tagged."""
     result = {
         "price": None,
         "dma_50": None,
@@ -75,6 +177,7 @@ def fetch_market_data(yf_ticker: str) -> dict:
         "atr": None,
         "roe": None,
         "high_52w": None,
+        "low_52w": None,
         "trend_override": None,
         "history": None,
         "is_friday_close": False,
@@ -107,65 +210,9 @@ def fetch_market_data(yf_ticker: str) -> dict:
         if len(clean_close) < 200:
             result["trend_override"] = "NO_DATA"
             return result
-        result["price"] = float(clean_close.iloc[-1])
-        dma_50_series = clean_close.rolling(window=50).mean()
-        dma_200_series = clean_close.rolling(window=200).mean()
-        result["dma_50"] = float(dma_50_series.iloc[-1])
-        result["dma_200"] = float(dma_200_series.iloc[-1])
-        result["history"] = clean_close
 
-        if hasattr(clean_close.index, "dayofweek"):
-            result["is_friday_close"] = bool(clean_close.index[-1].dayofweek == 4)
-            try:
-                next_bday = clean_close.index[-1] + pd.offsets.BDay(1)
-                result["is_month_end"] = bool(next_bday.month != clean_close.index[-1].month)
-            except Exception:
-                result["is_month_end"] = False
-
-        if os.getenv("IS_MONTH_END"):
-            result["is_month_end"] = (os.getenv("IS_MONTH_END", "").strip().lower() in ("true", "1", "yes"))
-
-        if len(dma_200_series.dropna()) >= 21:
-            val_20_ago = float(dma_200_series.dropna().iloc[-21])
-            result["dma_200_20_ago"] = val_20_ago
-            result["dma_200_rising"] = bool(result["dma_200"] > val_20_ago)
-
-        breach_cutoff = dma_200_series * (1.0 - RISK_CONFIG.dma_200_breach_pct / 100.0)
-        c_sessions = 0
-        for c_px, b_px in zip(reversed(clean_close.values), reversed(breach_cutoff.values)):
-            if pd.notna(c_px) and pd.notna(b_px) and c_px < b_px:
-                c_sessions += 1
-            else:
-                break
-        result["sessions_below_200dma"] = c_sessions
-
-        if len(clean_close) >= 210:
-            result["sma_10_month"] = float(clean_close.iloc[-210:].mean())
-        else:
-            result["sma_10_month"] = result["dma_200"]
-
-        if len(clean_close) >= 126:
-            r6 = float(clean_close.iloc[-1] / clean_close.iloc[-126] - 1.0)
-            std6 = float(clean_close.iloc[-126:].pct_change().dropna().std() * (252 ** 0.5))
-            result["vol_adj_return_6m"] = (r6 / std6) if std6 > 0 else (1.0 if r6 > 0 else -1.0)
-        else:
-            result["vol_adj_return_6m"] = 1.0
-
-        if len(clean_close) >= 200:
-            r12 = float(clean_close.iloc[-1] / clean_close.iloc[0] - 1.0)
-            std12 = float(clean_close.pct_change().dropna().std() * (252 ** 0.5))
-            result["vol_adj_return_12m"] = (r12 / std12) if std12 > 0 else (1.0 if r12 > 0 else -1.0)
-        else:
-            result["vol_adj_return_12m"] = 1.0
-
-        if "High" in data.columns and not data["High"].dropna().empty:
-            result["high_52w"] = float(data["High"].max())
-        else:
-            result["high_52w"] = float(clean_close.max())
-        if {"High", "Low"}.issubset(data.columns):
-            atr_series = compute_atr(data.rename(columns={"High": "high", "Low": "low", "Close": "close"}))
-            if not atr_series.empty and pd.notna(atr_series.iloc[-1]):
-                result["atr"] = float(atr_series.iloc[-1])
+        features = compute_market_features(data, RISK_CONFIG)
+        result.update(features)
 
         result["as_of_close"] = None
         if not clean_close.empty:

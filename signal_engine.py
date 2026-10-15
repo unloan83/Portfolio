@@ -2,6 +2,24 @@
 
 Provides a unified single source of truth for technical and fundamental
 signal evaluations.
+
+QUANT VALIDATION (Redbull core discipline):
+
+Hypotheses:
+H1 trailing stop: a >= 30% fall from the 52w high after a >= 50% gain predicts 12-month underperformance vs NIFTYBEES.
+H2 invalidation: 3 closes below the level predict underperformance better than 1 close.
+H3 200-DMA REVIEW: > 3% below the 200-DMA for 20 sessions flags higher risk, but not reliably enough to SELL.
+H4 accumulate gate: a rising 200-DMA + positive 6/12-month vol-adjusted momentum predicts outperformance.
+H5 cap precedence: trimming above 8% reduces drawdown without materially lowering return.
+
+Failure Modes:
+- V-shaped recoveries (REVIEW/SELL at lows): False breakdown signals during sharp temporary dips trigger REVIEW or SELL actions near cycle troughs, locking in underperformance right before violent rebounds.
+- Momentum crashes (accumulate gate buys tops, e.g. Sep 2024): Accumulate filters require strong 6/12-month momentum and rising 200-DMA, which can trigger buy signals at cyclical peaks immediately before sharp reversals.
+- Stale broker price driving decisions: Divergence between static broker snapshot prices and active live market quotes can distort portfolio weights, trigger spurious invalidation breaches, or misallocate trims.
+- Corporate-action gaps faking breakdowns: Unadjusted price series following splits, bonuses, or demergers create artificial overnight drops that mimic thesis invalidation or 200-DMA breakdowns.
+
+Tax and Transaction Cost Disclaimer:
+All signals, rule evaluations, and model returns exclude tax and transaction costs, representing an upper bound on net performance.
 """
 from dataclasses import dataclass
 from typing import Optional

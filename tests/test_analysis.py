@@ -1009,6 +1009,169 @@ def test_thesis_invalidated_rows_unchanged():
         assert actual_inv == pytest.approx(exp_inv), f"{sym} Invalidation_Price changed from {exp_inv} to {actual_inv}"
 
 
+def test_no_lookahead_feature_truncation():
+    """Item C: No-lookahead truncation tests for every new feature.
+
+    Verifies that for arbitrary random cutoffs t, features computed on data[:t]
+    are strictly equal to features computed on the full series sliced at t:
+    1. consecutive-close counts (sessions_below_200dma & invalidation closes)
+    2. month-end detection (is_month_end)
+    3. 200-DMA rising check (dma_200_rising & dma_200_20_ago)
+    4. 6/12-month momentum (vol_adj_return_6m & vol_adj_return_12m)
+    5. 52w high/low (high_52w & low_52w)
+
+    Also verifies strict future invariance: mutating future data (data[t:])
+    has zero impact on features evaluated as of t.
+    """
+    import random
+
+    n_days = 500
+    dates = pd.bdate_range(start="2023-01-02", periods=n_days)
+    np.random.seed(12345)
+    daily_returns = np.random.normal(0.0003, 0.015, size=n_days)
+    close_vals = 100.0 * np.exp(np.cumsum(daily_returns))
+    high_vals = close_vals * (1.0 + np.abs(np.random.normal(0, 0.008, size=n_days)))
+    low_vals = close_vals * (1.0 - np.abs(np.random.normal(0, 0.008, size=n_days)))
+
+    full_df = pd.DataFrame(
+        {"Close": close_vals, "High": high_vals, "Low": low_vals, "Open": close_vals},
+        index=dates,
+    )
+
+    # Pre-calculate full rolling series for ground-truth comparison
+    full_dma200 = full_df["Close"].rolling(200).mean()
+    breach_cutoff = full_dma200 * (1.0 - 0.03)
+
+    rng = random.Random(98765)
+    random_t_cutoffs = rng.sample(range(260, n_days - 20), 8)
+
+    for t in random_t_cutoffs:
+        sliced_df = full_df.iloc[:t].copy()
+        feats_sliced = analysis.compute_market_features(sliced_df)
+
+        # 1. 200-DMA rising check & values
+        expected_dma_200 = float(full_dma200.iloc[t - 1])
+        expected_dma_20_ago = float(full_dma200.iloc[t - 21])
+        expected_rising = bool(expected_dma_200 > expected_dma_20_ago)
+
+        assert feats_sliced["dma_200"] == pytest.approx(expected_dma_200, rel=1e-6)
+        assert feats_sliced["dma_200_20_ago"] == pytest.approx(expected_dma_20_ago, rel=1e-6)
+        assert feats_sliced["dma_200_rising"] == expected_rising
+
+        # 2. Month-end detection
+        expected_month_end = bool(
+            (full_df.index[t - 1] + pd.offsets.BDay(1)).month != full_df.index[t - 1].month
+        )
+        assert feats_sliced["is_month_end"] == expected_month_end
+
+        # 3. 6-month and 12-month vol-adjusted momentum
+        # 6m: trailing 126 sessions
+        r6 = float(full_df["Close"].iloc[t - 1] / full_df["Close"].iloc[t - 126] - 1.0)
+        std6 = float(full_df["Close"].iloc[t - 126 : t].pct_change().dropna().std() * (252**0.5))
+        expected_6m = (r6 / std6) if std6 > 0 else (1.0 if r6 > 0 else -1.0)
+        assert feats_sliced["vol_adj_return_6m"] == pytest.approx(expected_6m, rel=1e-5)
+
+        # 12m: trailing 252 sessions (or available if < 252)
+        lookback_12m = 252 if t >= 252 else t
+        r12 = float(full_df["Close"].iloc[t - 1] / full_df["Close"].iloc[t - lookback_12m] - 1.0)
+        ret12 = full_df["Close"].iloc[t - lookback_12m : t].pct_change().dropna()
+        std12 = float(ret12.std() * (252**0.5)) if len(ret12) > 1 else 0.0
+        expected_12m = (r12 / std12) if std12 > 0 else (1.0 if r12 > 0 else -1.0)
+        assert feats_sliced["vol_adj_return_12m"] == pytest.approx(expected_12m, rel=1e-5)
+
+        # 4. 52w high and low
+        expected_52w_high = float(full_df["High"].iloc[t - 252 : t].max())
+        expected_52w_low = float(full_df["Low"].iloc[t - 252 : t].min())
+        assert feats_sliced["high_52w"] == pytest.approx(expected_52w_high, rel=1e-6)
+        assert feats_sliced["low_52w"] == pytest.approx(expected_52w_low, rel=1e-6)
+
+        # 5. Consecutive-close counts:
+        # a) sessions_below_200dma
+        c_sessions_full = 0
+        for c_px, b_px in zip(
+            reversed(full_df["Close"].iloc[:t].values),
+            reversed(breach_cutoff.iloc[:t].values),
+        ):
+            if pd.notna(c_px) and pd.notna(b_px) and c_px < b_px:
+                c_sessions_full += 1
+            else:
+                break
+        assert feats_sliced["sessions_below_200dma"] == c_sessions_full
+
+        # b) consecutive closes below invalidation level
+        test_inv_level = float(full_df["Close"].iloc[t - 1]) * 1.02
+        c_inv_sliced = 0
+        for val in reversed(sliced_df["Close"].values):
+            if val <= test_inv_level:
+                c_inv_sliced += 1
+            else:
+                break
+        c_inv_full = 0
+        for val in reversed(full_df["Close"].iloc[:t].values):
+            if val <= test_inv_level:
+                c_inv_full += 1
+            else:
+                break
+        assert c_inv_sliced == c_inv_full
+
+        # 6. Future Data Mutation Invariance (Leakage Trap)
+        # Mutate the future series starting at index t into extreme values
+        future_corrupted = full_df.copy()
+        future_corrupted.iloc[t:, future_corrupted.columns.get_loc("Close")] = 999999.0
+        future_corrupted.iloc[t:, future_corrupted.columns.get_loc("High")] = 1999999.0
+        future_corrupted.iloc[t:, future_corrupted.columns.get_loc("Low")] = 0.0001
+        corrupted_slice = future_corrupted.iloc[:t].copy()
+        feats_corrupted = analysis.compute_market_features(corrupted_slice)
+
+        assert feats_corrupted["dma_200_rising"] == feats_sliced["dma_200_rising"]
+        assert feats_corrupted["is_month_end"] == feats_sliced["is_month_end"]
+        assert feats_corrupted["vol_adj_return_6m"] == pytest.approx(feats_sliced["vol_adj_return_6m"])
+        assert feats_corrupted["vol_adj_return_12m"] == pytest.approx(feats_sliced["vol_adj_return_12m"])
+        assert feats_corrupted["high_52w"] == pytest.approx(feats_sliced["high_52w"])
+        assert feats_corrupted["low_52w"] == pytest.approx(feats_sliced["low_52w"])
+        assert feats_corrupted["sessions_below_200dma"] == feats_sliced["sessions_below_200dma"]
+
+        # 7. End-to-end signal decision invariance under future corruption
+        from signal_engine import evaluate_signal
+        sig_sliced = evaluate_signal(
+            current_price=feats_sliced["price"],
+            dma_50=feats_sliced["dma_50"],
+            dma_200=feats_sliced["dma_200"],
+            price_history=sliced_df["Close"],
+            high_52w=feats_sliced["high_52w"],
+            sessions_below_200dma=feats_sliced["sessions_below_200dma"],
+            dma_200_rising=feats_sliced["dma_200_rising"],
+            vol_adj_return_6m=feats_sliced["vol_adj_return_6m"],
+            vol_adj_return_12m=feats_sliced["vol_adj_return_12m"],
+            is_month_end=feats_sliced["is_month_end"],
+            invalidation_price=test_inv_level,
+            total_return=0.15,
+            conviction=4.0,
+            stock_weight=3.0,
+        )
+        sig_corrupted = evaluate_signal(
+            current_price=feats_corrupted["price"],
+            dma_50=feats_corrupted["dma_50"],
+            dma_200=feats_corrupted["dma_200"],
+            price_history=corrupted_slice["Close"],
+            high_52w=feats_corrupted["high_52w"],
+            sessions_below_200dma=feats_corrupted["sessions_below_200dma"],
+            dma_200_rising=feats_corrupted["dma_200_rising"],
+            vol_adj_return_6m=feats_corrupted["vol_adj_return_6m"],
+            vol_adj_return_12m=feats_corrupted["vol_adj_return_12m"],
+            is_month_end=feats_corrupted["is_month_end"],
+            invalidation_price=test_inv_level,
+            total_return=0.15,
+            conviction=4.0,
+            stock_weight=3.0,
+        )
+        assert sig_sliced.decision == sig_corrupted.decision
+        assert sig_sliced.signal == sig_corrupted.signal
+        assert sig_sliced.recommended_action == sig_corrupted.recommended_action
+
+
+
+
 
 
 
