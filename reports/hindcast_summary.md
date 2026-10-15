@@ -1,6 +1,6 @@
 # Hindcast summary
 
-Engine commit `f1ca5fd` · price manifest sha256 `595381de6a92b810` · grid sha256 `045f1d1f42a932fb` · benchmark NIFTYBEES.NS (adjusted close) · bootstrap seed 42
+Engine commit `4f47ccb` · price manifest sha256 `595381de6a92b810` · grid sha256 `045f1d1f42a932fb` · benchmark NIFTYBEES.NS (adjusted close) · bootstrap seed 42
 
 ## 1. Verdict per decision type (primary window, incumbent parameters)
 
@@ -34,7 +34,7 @@ Primary FOLLOW-MODEL minus DO-NOTHING: -3.70% a year, bootstrap 95% CI [-9.26%, 
 
 TRAIN 2019-01-01–2022-09-30 (44 decision dates after purging labels that overlap TEST); TEST 2023-10-01–2025-10-31 (25 dates), looked at once. Grid: 14 configs from `data/hindcast/grid.json`.
 
-Best on TRAIN: **trail_trim_half** {"trailing_trim_fraction": 0.5}. DSR 0.18, PBO 0.45.
+Best on TRAIN: **trail_trim_half** {"trailing_trim_fraction": 0.5}. DSR 0.18, PBO 0.50.
 
 | Acceptance check | Pass |
 |---|---|
@@ -100,6 +100,7 @@ Parameter robustness (share of grid neighbours with the same sign of TRAIN benef
 | TATGLO     | TATACONSUM.NS |   2317 | 2017-06-01 | OK                             |                                                                                                                                                                                                   |
 | TATPOW     | TATAPOWER.NS  |   2317 | 2017-06-01 | OK                             |                                                                                                                                                                                                   |
 | WIPRO      | WIPRO.NS      |   2317 | 2017-06-01 | OK                             | WIPRO.NS bonus 2024-12-03 (sourced): series already adjusted (max one-day move in window x0.982)                                                                                                  |
+| BENCHMARK  | NIFTYBEES.NS  |   2313 | 2017-06-01 | SPIKE_REMOVED                  | NIFTYBEES.NS: dropped bad bar 2019-12-19 close 13.02 vs local median 128.62 | NIFTYBEES.NS: dropped bad bar 2019-12-20 close 13.03 vs local median 129.25                                         |
 
 Decision coverage (primary): ENTRY=5, NOT_LISTED=173, OK=1002, SHORT_HISTORY=78
 

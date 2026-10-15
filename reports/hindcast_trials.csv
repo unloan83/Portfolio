@@ -1,15 +1,15 @@
 config_id,overrides,train_active_ann,train_sharpe_per_day,train_hit_b5,grid_sha256
-incumbent,{},-0.029042,-0.033971,0.552941,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-trail_dd_20,"{""trailing_drawdown_pct"": 20.0}",-0.030488,-0.032478,0.533333,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-trail_dd_40,"{""trailing_drawdown_pct"": 40.0}",-0.032497,-0.039395,0.547619,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-trail_gain_25,"{""trailing_min_gain_pct"": 25.0}",-0.029042,-0.033971,0.550296,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-trail_gain_75,"{""trailing_min_gain_pct"": 75.0}",-0.029338,-0.034403,0.550296,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-trail_trim_half,"{""trailing_trim_fraction"": 0.5}",-0.028002,-0.032087,0.556886,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-overext_1.40,"{""overextension_multiple"": 1.4}",-0.029351,-0.034398,0.547059,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-overext_off,"{""overextension_multiple"": 99.0}",-0.029351,-0.034398,0.547059,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-review_sessions_10,"{""dma_200_breach_sessions"": 10}",-0.029042,-0.033971,0.552941,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-review_sessions_40,"{""dma_200_breach_sessions"": 40}",-0.029042,-0.033971,0.552941,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-review_band_2,"{""dma_200_breach_pct"": 2.0}",-0.029042,-0.033971,0.552941,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-review_band_5,"{""dma_200_breach_pct"": 5.0}",-0.029042,-0.033971,0.552941,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-acc_high_10,"{""accumulate_high_52w_pct"": 10.0}",-0.031026,-0.035648,0.536585,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
-acc_high_30,"{""accumulate_high_52w_pct"": 30.0}",-0.029048,-0.034052,0.564706,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+incumbent,{},-0.029105,-0.034008,0.550296,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+trail_dd_20,"{""trailing_drawdown_pct"": 20.0}",-0.030554,-0.032514,0.530488,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+trail_dd_40,"{""trailing_drawdown_pct"": 40.0}",-0.032567,-0.039439,0.54491,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+trail_gain_25,"{""trailing_min_gain_pct"": 25.0}",-0.029105,-0.034008,0.547619,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+trail_gain_75,"{""trailing_min_gain_pct"": 75.0}",-0.029402,-0.034441,0.547619,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+trail_trim_half,"{""trailing_trim_fraction"": 0.5}",-0.028062,-0.032122,0.554217,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+overext_1.40,"{""overextension_multiple"": 1.4}",-0.029415,-0.034436,0.544379,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+overext_off,"{""overextension_multiple"": 99.0}",-0.029415,-0.034436,0.544379,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+review_sessions_10,"{""dma_200_breach_sessions"": 10}",-0.029105,-0.034008,0.550296,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+review_sessions_40,"{""dma_200_breach_sessions"": 40}",-0.029105,-0.034008,0.550296,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+review_band_2,"{""dma_200_breach_pct"": 2.0}",-0.029105,-0.034008,0.550296,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+review_band_5,"{""dma_200_breach_pct"": 5.0}",-0.029105,-0.034008,0.550296,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+acc_high_10,"{""accumulate_high_52w_pct"": 10.0}",-0.031093,-0.035688,0.533742,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c
+acc_high_30,"{""accumulate_high_52w_pct"": 30.0}",-0.029111,-0.03409,0.56213,045f1d1f42a932fba2c640b28c773fc4d41aa56cee575e23c1fcf948315c314c

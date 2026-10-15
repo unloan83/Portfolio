@@ -67,9 +67,14 @@ def load_universe(price_dir: Path = PRICE_DIR):
         data_log.append({"symbol": sym, "ticker": info.ticker, "rows": 0 if df is None else len(df),
                          "first": "" if df is None else str(df.index[0].date()),
                          "tags": ",".join(sorted(set(info.tags))) or "OK", "notes": " | ".join(info.log)})
-    bench_df = load_adjusted(BENCHMARK_TICKER, price_dir)
+    bench_notes: list[str] = []
+    bench_df = load_adjusted(BENCHMARK_TICKER, price_dir, bench_notes)
     if bench_df is None:
         raise SystemExit(f"Benchmark {BENCHMARK_TICKER} missing from {price_dir}; run `python -m hindcast.fetch` first.")
+    data_log.append({"symbol": "BENCHMARK", "ticker": BENCHMARK_TICKER,
+                     "rows": 0 if bench_df is None else len(bench_df),
+                     "first": "" if bench_df is None else str(bench_df.index[0].date()),
+                     "tags": "SPIKE_REMOVED" if bench_notes else "OK", "notes": " | ".join(bench_notes)})
     sectors = {s: SECTOR_MAP.get(s, "Other ETFs/Misc") for s in symbols}
     return symbols, prices, tickers, sectors, bench_df["Close"], pd.DataFrame(data_log)
 

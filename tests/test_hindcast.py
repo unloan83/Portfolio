@@ -181,3 +181,14 @@ def test_stats_primitives():
     m = pd.DataFrame(rng.normal(0, 0.01, (600, 5)))
     assert 0 <= stats.pbo_cscv(m) <= 1
     assert 0 <= stats.deflated_sharpe(pd.Series(rng.normal(0.001, 0.01, 500)), 10, 1e-4) <= 1
+
+
+def test_isolated_bad_prints_are_dropped_but_splits_kept():
+    idx = pd.bdate_range("2019-12-02", periods=20)
+    close = np.linspace(128, 131, 20)
+    close[12:14] = 13.0  # two bad prints, then back to ~130 (NIFTYBEES 2019-12-19/20)
+    clean, notes = hdata.remove_price_spikes(_frame(close, idx))
+    assert len(clean) == 18 and len(notes) == 2
+    split = np.r_[np.full(10, 100.0), np.full(10, 50.0)]
+    kept, notes2 = hdata.remove_price_spikes(_frame(split, idx))
+    assert len(kept) == 20 and not notes2

@@ -48,11 +48,27 @@ def _read_csv(path: Path) -> pd.DataFrame:
     return df[[c for c in PRICE_COLS if c in df.columns]].dropna(subset=["Close"])
 
 
-def load_adjusted(ticker: str, price_dir: Path = PRICE_DIR) -> Optional[pd.DataFrame]:
+# A bar more than this far from its centred 5-session median is a bad print when
+# the series returns to the median afterwards (splits move the median, spikes don't).
+SPIKE_TOLERANCE = 0.5
+
+
+def remove_price_spikes(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Drop isolated bad bars (e.g. NIFTYBEES closes of ~13 vs ~130 on 2019-12-19/20)."""
+    close = df["Close"]
+    med = close.rolling(5, center=True, min_periods=3).median()
+    bad = (close / med - 1.0).abs() > SPIKE_TOLERANCE
+    notes = [f"dropped bad bar {d.date()} close {close[d]:.2f} vs local median {med[d]:.2f}" for d in close.index[bad]]
+    return df[~bad], notes
+
+
+def load_adjusted(ticker: str, price_dir: Path = PRICE_DIR, notes: Optional[list] = None) -> Optional[pd.DataFrame]:
     path = price_dir / "adj" / f"{ticker}.csv"
     if not path.exists():
         return None
-    df = _read_csv(path)
+    df, dropped = remove_price_spikes(_read_csv(path))
+    if notes is not None:
+        notes.extend(f"{ticker}: {n}" for n in dropped)
     return df if not df.empty else None
 
 
@@ -136,14 +152,19 @@ def apply_corporate_actions(df: pd.DataFrame, ticker: str, events: list[dict], i
 def load_symbol(broker_symbol: str, ticker: str, events: list[dict], price_dir: Path = PRICE_DIR) -> tuple[Optional[pd.DataFrame], SeriesInfo]:
     candidates = ALTERNATE_TICKERS.get(broker_symbol, [ticker])
     best, best_ticker = None, ticker
+    spike_notes: list[str] = []
     for cand in candidates:
-        df = load_adjusted(cand, price_dir)
+        df = load_adjusted(cand, price_dir, spike_notes)
         if cand in RENAMES:
             old_ticker, change = RENAMES[cand]
-            df = stitch(df, load_adjusted(old_ticker, price_dir), change)
+            df = stitch(df, load_adjusted(old_ticker, price_dir, spike_notes), change)
         if df is not None and (best is None or len(df) > len(best)):
             best, best_ticker = df, cand
     info = SeriesInfo(ticker=best_ticker)
+    own = [n for n in spike_notes if n.startswith(best_ticker + ":")]
+    if own:
+        info.tags.append("SPIKE_REMOVED")
+        info.log.extend(own)
     if best is None:
         info.tags.append("MISSING")
         return None, info
