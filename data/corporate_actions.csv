@@ -7,6 +7,6 @@ DRREDDY.NS,2024-10-28,split,0.2,sourced,1:5 split (FV 5 to 1)
 RELIANCE.NS,2024-10-28,bonus,0.5,sourced,1:1 bonus (record date 28 Oct 2024)
 WIPRO.NS,2024-12-03,bonus,0.5,sourced,1:1 bonus (record date 3 Dec 2024)
 ASHOKLEY.NS,2025-07-16,bonus,0.5,sourced,1:1 bonus (record date 16 Jul 2025)
-HDFCBANK.NS,2025-08-26,bonus,0.5,unverified,1:1 bonus ~Aug 2025 (confirm from raw series)
+HDFCBANK.NS,2025-08-26,bonus,0.5,sourced,1:1 bonus issue (record date 27 Aug 2025; NSE/BSE corporate action)
 BANKNIFTY1.NS,2026-02-27,split,0.1,sourced,Kotak Nifty Bank ETF 10:1 unit split
 GUJENERGY.NS,2026-07-02,demerger,,sourced,GSPL Transmission demerger 1 GTL per 3 shares (record date 2 Jul 2026)
