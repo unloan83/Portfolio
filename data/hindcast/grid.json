@@ -1,0 +1,20 @@
+{
+  "note": "Frozen before any tuning run. Incumbent plus one-at-a-time changes; no other knobs may be tuned.",
+  "objective": "TRAIN annualised mean daily return of FOLLOW-MODEL minus DO-NOTHING; tie-break episode hit rate (b=5%)",
+  "configs": [
+    {"id": "incumbent", "overrides": {}},
+    {"id": "trail_dd_20", "overrides": {"trailing_drawdown_pct": 20.0}},
+    {"id": "trail_dd_40", "overrides": {"trailing_drawdown_pct": 40.0}},
+    {"id": "trail_gain_25", "overrides": {"trailing_min_gain_pct": 25.0}},
+    {"id": "trail_gain_75", "overrides": {"trailing_min_gain_pct": 75.0}},
+    {"id": "trail_trim_half", "overrides": {"trailing_trim_fraction": 0.5}},
+    {"id": "overext_1.40", "overrides": {"overextension_multiple": 1.40}},
+    {"id": "overext_off", "overrides": {"overextension_multiple": 99.0}},
+    {"id": "review_sessions_10", "overrides": {"dma_200_breach_sessions": 10}},
+    {"id": "review_sessions_40", "overrides": {"dma_200_breach_sessions": 40}},
+    {"id": "review_band_2", "overrides": {"dma_200_breach_pct": 2.0}},
+    {"id": "review_band_5", "overrides": {"dma_200_breach_pct": 5.0}},
+    {"id": "acc_high_10", "overrides": {"accumulate_high_52w_pct": 10.0}},
+    {"id": "acc_high_30", "overrides": {"accumulate_high_52w_pct": 30.0}}
+  ]
+}
