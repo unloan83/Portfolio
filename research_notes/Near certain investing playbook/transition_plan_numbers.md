@@ -7,7 +7,7 @@
   - Valuation and plan date: **2026-10-16**.
   - A lot counts as long-term (LT) when the sale date is on or after buy date + 12 months + 1 day.
 - **Lot matching:** FIFO lots are built from `trades.csv`, adjusted for the bonus and demerger events in `data/corporate_actions.csv`.
-- **Calculator:** `/tmp/claude-0/-home-user-Portfolio/a8dc17ce-abc0-5fe4-beed-8ca4e391f0bb/scratchpad/transition.py`. Run it with `python3 transition.py` (base case) or `python3 transition.py reeng` (2026-10-15 prices). It is deterministic and writes no repo files.
+- **Calculator:** `research_notes/Near certain investing playbook/transition.py`. Run it with `python3 transition.py` (base case) or `python3 transition.py reeng` (2026-10-15 prices). It is deterministic and writes no repo files.
 - **Tax rules** come from the repo's own earlier research note (`research_notes/Portfolio repo logic improvements/india_tax_costs.md`). Its citations are repeated below.
 - **This is not tax advice.** The target allocation is an **example only**. The user picks the real targets.
 
