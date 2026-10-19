@@ -192,3 +192,17 @@ def test_isolated_bad_prints_are_dropped_but_splits_kept():
     split = np.r_[np.full(10, 100.0), np.full(10, 50.0)]
     kept, notes2 = hdata.remove_price_spikes(_frame(split, idx))
     assert len(kept) == 20 and not notes2
+
+
+def test_loss_control_signals_have_no_lookahead():
+    import numpy as np
+    import pandas as pd
+    from hindcast import loss_control as lc
+
+    rng = np.random.default_rng(1)
+    idx = pd.bdate_range("2018-01-01", periods=900)
+    c = pd.Series(100 * np.exp(np.cumsum(rng.normal(0, 0.012, len(idx)))), index=idx)
+    cut = 600
+    for fn in lc.RULES.values():
+        full, trunc = fn(c), fn(c.iloc[:cut])
+        pd.testing.assert_series_equal(full.iloc[:cut - 25], trunc.iloc[:cut - 25], check_names=False)
