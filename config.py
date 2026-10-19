@@ -81,6 +81,16 @@ class RiskConfig:
     ltcg_exemption_limit: float = _float("LTCG_EXEMPTION_LIMIT", 125000.0)
     # Broad index ETFs exempt from trailing stops and single-stock stop-loss rules
     broad_index_etfs: tuple[str, ...] = ("ICINIF", "HDF250", "MIR150")
+    # Per-stock trend exit (reports/loss_control_test.md): SELL when the last
+    # month-end close is below the average of the last N month-end closes; re-entry
+    # alert when a sold stock's month-end close is back above. Individual stocks only.
+    trend_exit_enabled: bool = os.getenv("TREND_EXIT_ENABLED", "true").strip().lower() in ("true", "1", "yes")
+    trend_exit_months: int = _int("TREND_EXIT_MONTHS", 10)
+    trend_exit_exempt: tuple[str, ...] = ("ICINIF", "HDF250", "MIR150", "NIPNIT", "KOTAKBKETF", "ICIGOL", "ICIPSE")
+    # Market-wide warning: Nifty 50 ETF vs its 200-day SMA with a +/-2% band.
+    market_trend_ticker: str = "NIFTYBEES.NS"
+    market_trend_sma_days: int = _int("MARKET_TREND_SMA_DAYS", 200)
+    market_trend_band_pct: float = _float("MARKET_TREND_BAND_PCT", 2.0)
     # Portfolio snapshot as-of date for verifying broker prices against historical closes
     portfolio_as_of: str = os.getenv("PORTFOLIO_AS_OF", "2026-09-26")
 

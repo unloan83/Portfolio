@@ -70,6 +70,8 @@ class SignalEvaluationResult:
     # True while the 200-DMA / 10-month-SMA hysteresis REVIEW is active; callers
     # feed it back as in_dma_review on the next evaluation.
     dma_review_active: bool = False
+    # True when the per-stock month-end trend exit drove the SELL.
+    trend_exit: bool = False
 
 
 """
@@ -83,8 +85,12 @@ DECISION TREE:
      - Otherwise -> Decision: "REVIEW", Action: "Review", Reason: "invalidation breached, N of 3 closes"
    - Fallback price (no technical data): VERIFY DATA / NO DATA with the breach in the rationale
      (the broker price never moves, so closes cannot confirm); tactical -> SELL.
-   PRECEDENCE: SELL > position-cap TRIM (> max_position_pct) / trailing-stop TRIM > REVIEW
+   PRECEDENCE: SELL (invalidation or trend exit) > position-cap TRIM (> max_position_pct) / trailing-stop TRIM > REVIEW
    > sector/risk-group TRIM > ACCUMULATE > HOLD.
+3b. TREND EXIT (individual stocks only; config.trend_exit_exempt are ETFs):
+   - Last month-end close < average of the last 10 month-end closes -> Decision: "SELL", Action: "Exit"
+   - State is fixed for the month after each month-end. Evidence: reports/loss_control_test.md
+     (27 stocks 2018-26: worst fall -38% -> -13.5% for ~1.3%/yr less growth).
 4. 200-DMA BREAKDOWN HYSTERESIS REVIEW:
    - Enter when close > 3% below 200-DMA for >= 20 sessions OR month-end close < 10-month SMA -> Decision: "REVIEW", Action: "Review"
    - Exit when close > 200-DMA + 2%
@@ -138,6 +144,9 @@ def evaluate_signal(
     dma_200_20_ago: Optional[float] = None,
     vol_adj_return_6m: Optional[float] = None,
     vol_adj_return_12m: Optional[float] = None,
+    trend_below: Optional[bool] = None,
+    trend_month_end_close: Optional[float] = None,
+    trend_sma_months: Optional[float] = None,
 ) -> SignalEvaluationResult:
     """Evaluates combined technical, thesis, and fundamental signals for a single symbol."""
     fundamental_pass = roe is None or roe >= config.minimum_roe
@@ -252,6 +261,13 @@ def evaluate_signal(
         ):
             trailing_stop_hit = True
 
+    trend_exit = bool(
+        config.trend_exit_enabled
+        and has_technical_data
+        and trend_below
+        and (symbol is None or symbol not in config.trend_exit_exempt)
+    )
+
     # 200-DMA Review with Hysteresis:
     # - Enter when close > 3% below 200-DMA for >= 20 sessions OR month-end close < 10-month SMA
     # - Exit when close > 200-DMA + 2%
@@ -335,6 +351,9 @@ def evaluate_signal(
     elif invalidation_escalated_to_sell:
         signal = "🔴 STRG SELL"
         explanation = "thesis invalidated"
+    elif trend_exit:
+        signal = "🔴 TREND EXIT"
+        explanation = "month-end close below 10-month average"
     elif invalidation_is_review:
         signal = "🟡 REVIEW"
         explanation = f"invalidation breached, {consecutive_closes_below} of {config.invalidation_confirm_closes} closes"
@@ -402,7 +421,7 @@ def evaluate_signal(
             decision = "NO DATA"
     elif data_status == "NO THESIS":
         decision = "NO THESIS"
-    elif invalidation_escalated_to_sell:
+    elif invalidation_escalated_to_sell or trend_exit:
         decision = "SELL"
     elif position_cap_breach or trailing_stop_hit:
         decision = "TRIM"
@@ -470,7 +489,16 @@ def evaluate_signal(
 
         horizon_short_term = f"{technical_trend} — Price {cp_str} vs 50 DMA ({d50_str}) and 200 DMA ({d200_str})"
 
-        if decision == "SELL":
+        if decision == "SELL" and not invalidation_escalated_to_sell:
+            me_str = f"₹{trend_month_end_close:.2f}" if trend_month_end_close is not None else "N/A"
+            sma_str = f"₹{trend_sma_months:.2f}" if trend_sma_months is not None else "N/A"
+            n = config.trend_exit_months
+            horizon_long_term = f"TREND EXIT — month-end close {me_str} below {n}-month average {sma_str}"
+            rationale = (
+                f"Trend exit: month-end close {me_str} < {n}-month average {sma_str}. Sell and hold cash; "
+                f"re-entry is signalled when a month-end close is back above the average."
+            )
+        elif decision == "SELL":
             horizon_long_term = f"INVALIDATED — Price {cp_str} breached invalidation level {inv_str}"
             rationale = f"Thesis invalidated: Price {cp_str} <= invalidation price {inv_str}."
         elif decision == "REVIEW":
@@ -553,6 +581,7 @@ def evaluate_signal(
         trailing_stop=trailing_stop,
         trailing_stop_hit=trailing_stop_hit,
         dma_review_active=dma_review_active,
+        trend_exit=trend_exit,
     )
 
 

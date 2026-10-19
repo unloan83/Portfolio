@@ -88,6 +88,9 @@ def compute_market_features(data: pd.DataFrame, config: RiskConfig = RISK_CONFIG
         "vol_adj_return_6m": None,
         "vol_adj_return_12m": None,
         "history": None,
+        "trend_month_end_close": None,
+        "trend_sma_months": None,
+        "trend_below": None,
     }
     if data.empty or "Close" not in data.columns:
         return res
@@ -133,6 +136,8 @@ def compute_market_features(data: pd.DataFrame, config: RiskConfig = RISK_CONFIG
     else:
         res["sma_10_month"] = res["dma_200"]
 
+    res.update(month_end_trend(clean_close, res["is_month_end"], config.trend_exit_months))
+
     if len(clean_close) >= 126:
         r6 = float(clean_close.iloc[-1] / clean_close.iloc[-126] - 1.0)
         std6 = float(clean_close.iloc[-126:].pct_change().dropna().std() * (252 ** 0.5))
@@ -168,6 +173,76 @@ def compute_market_features(data: pd.DataFrame, config: RiskConfig = RISK_CONFIG
     return res
 
 
+def month_end_trend(close: pd.Series, is_month_end: bool, months: int) -> dict:
+    """Last completed month-end close vs the average of the last `months` month-end closes.
+
+    The current month counts only on its last session, so the state is fixed for
+    the whole month after each month-end (same rule as hindcast/loss_control.py).
+    """
+    out = {"trend_month_end_close": None, "trend_sma_months": None, "trend_below": None}
+    if close.empty or not hasattr(close.index, "to_period"):
+        return out
+    periods = close.index.to_period("M")
+    me = close.groupby(periods).tail(1)
+    if not is_month_end:
+        me = me[me.index.to_period("M") != periods[-1]]
+    if len(me) < months:
+        return out
+    last, sma = float(me.iloc[-1]), float(me.iloc[-months:].mean())
+    out.update(trend_month_end_close=last, trend_sma_months=sma, trend_below=bool(last < sma))
+    return out
+
+
+def market_trend_state(close: pd.Series, days: int, band_pct: float) -> pd.Series:
+    """RISK-ON / RISK-OFF per session: off below SMA x (1 - band), back on above SMA x (1 + band)."""
+    sma = close.rolling(days).mean()
+    band = band_pct / 100.0
+    state, out = "RISK-ON", []
+    for px, m in zip(close.values, sma.values):
+        if pd.notna(m):
+            if state == "RISK-ON" and px < m * (1 - band):
+                state = "RISK-OFF"
+            elif state == "RISK-OFF" and px > m * (1 + band):
+                state = "RISK-ON"
+        out.append(state)
+    return pd.Series(out, index=close.index)
+
+
+def trend_flipped_up(close: pd.Series, months: int, today: pd.Timestamp, window_days: int = 7) -> Optional[dict]:
+    """Re-entry check for a sold stock: the latest completed month-end close moved back
+    above its N-month average after being below at the month-end before. Reported only
+    in the first `window_days` after that month-end so the alert fires once."""
+    me = close.groupby(close.index.to_period("M")).tail(1)
+    me = me[me.index.to_period("M") < pd.Timestamp(today).to_period("M")] if len(me) else me
+    if len(me) < months + 1:
+        return None
+    now_above = me.iloc[-1] >= me.iloc[-months:].mean()
+    was_below = me.iloc[-2] < me.iloc[-months - 1:-1].mean()
+    days_since = (pd.Timestamp(today).normalize() - pd.Timestamp(me.index[-1]).tz_localize(None).normalize()).days
+    if now_above and was_below and days_since <= window_days:
+        return {"close": float(me.iloc[-1]), "sma": float(me.iloc[-months:].mean())}
+    return None
+
+
+def market_trend_report(close: pd.Series, prev_run: Optional[pd.Timestamp], config: RiskConfig = RISK_CONFIG) -> tuple[str, bool]:
+    """One-line Nifty trend status and whether it flipped since the previous run."""
+    states = market_trend_state(close, config.market_trend_sma_days, config.market_trend_band_pct)
+    now = states.iloc[-1]
+    sma = close.rolling(config.market_trend_sma_days).mean().iloc[-1]
+    flipped = False
+    if prev_run is not None:
+        idx = states.index.tz_localize(None) if getattr(states.index, "tz", None) is not None else states.index
+        before = states[idx <= prev_run]
+        flipped = bool(len(before) and before.iloc[-1] != now)
+    icon = "🟢" if now == "RISK-ON" else "🔴"
+    advice = ("no market-wide action" if now == "RISK-ON"
+              else "warning only: stop new buying; per-stock trend exits do the selling")
+    line = (f"{icon} Market trend {now}: Nifty ETF ₹{close.iloc[-1]:.2f} vs {config.market_trend_sma_days}-day "
+            f"average ₹{sma:.2f} (±{config.market_trend_band_pct:.0f}% band) — {advice}"
+            + (" [CHANGED since last run]" if flipped else ""))
+    return line, flipped
+
+
 def fetch_market_data(yf_ticker: str) -> dict:
     """Price, 50/200 DMA, 14-day ATR, 52-week High/Low, ROE, and trend metrics for one ticker; failures are tagged."""
     result = {
@@ -188,6 +263,9 @@ def fetch_market_data(yf_ticker: str) -> dict:
         "dma_200_20_ago": None,
         "vol_adj_return_6m": None,
         "vol_adj_return_12m": None,
+        "trend_month_end_close": None,
+        "trend_sma_months": None,
+        "trend_below": None,
         "as_of_close": None,
     }
     if yf_ticker in ('UNLISTED', 'TODO_VERIFY'):
@@ -201,7 +279,7 @@ def fetch_market_data(yf_ticker: str) -> dict:
         result["roe"] = info.get('returnOnEquity')
 
         # Momentum Agent
-        data = ticker_obj.history(period="1y")
+        data = ticker_obj.history(period="2y")  # >= 10 completed month-ends for the trend exit
         if data.empty or "Close" not in data.columns:
             result["trend_override"] = "NO_DATA"
             return result
@@ -727,6 +805,9 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             dma_200_20_ago=md.get("dma_200_20_ago"),
             vol_adj_return_6m=md.get("vol_adj_return_6m"),
             vol_adj_return_12m=md.get("vol_adj_return_12m"),
+            trend_below=md.get("trend_below"),
+            trend_month_end_close=md.get("trend_month_end_close"),
+            trend_sma_months=md.get("trend_sma_months"),
         )
         signal = eval_res.signal
         recommended_action = size_action(
@@ -1005,10 +1086,55 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
     thesis_review_md += inv_df.to_markdown(index=False) + "\n\n"
     thesis_review_md += "See `reports/thesis_proposals.md` for proposed invalidation floor increases on major winners.\n"
 
+    # --- MARKET-WIDE TREND WARNING + RE-ENTRY WATCHLIST (reports/loss_control_test.md) ---
+    trend_md = "\n### Market Trend and Re-entry Watchlist\n"
+    prev_run = None
+    if os.path.exists(tracking_file):
+        try:
+            prior_dates = pd.read_csv(tracking_file, usecols=["Analysis_Date"])["Analysis_Date"].dropna()
+            prior_dates = pd.to_datetime(prior_dates[prior_dates != date_str], errors="coerce").dropna()
+            prev_run = prior_dates.max() if not prior_dates.empty else None
+        except Exception as exc:
+            print(f"[warn] Could not read previous run date: {exc}")
+    urgent_lines = []
+    try:
+        nifty = yf.Ticker(RISK_CONFIG.market_trend_ticker).history(period="2y")["Close"].dropna()
+        if len(nifty) >= RISK_CONFIG.market_trend_sma_days:
+            m_line, m_flipped = market_trend_report(nifty, prev_run)
+            trend_md += f"* {m_line}\n"
+            if m_flipped:
+                urgent_lines.append(html.escape(m_line))
+        else:
+            trend_md += "* Market trend: not enough Nifty history.\n"
+    except Exception as exc:
+        trend_md += "* Market trend: Nifty data unavailable.\n"
+        print(f"[warn] Market trend fetch failed: {type(exc).__name__}: {exc}")
+
+    held = set(df["Stock Symbol"])
+    watch = [s for s in thesis_dict if s not in held and s not in RISK_CONFIG.trend_exit_exempt]
+    reentries = []
+    for sym in watch:
+        try:
+            hist = yf.Ticker(TICKER_MAP.get(sym, f"{sym}.NS")).history(period="2y")["Close"].dropna()
+            hit = trend_flipped_up(hist, RISK_CONFIG.trend_exit_months, now_ist.replace(tzinfo=None)) if len(hist) else None
+        except Exception as exc:
+            print(f"[warn] Re-entry check failed for {sym}: {exc}")
+            hit = None
+        if hit:
+            reentries.append(sym)
+            urgent_lines.append(
+                f"🟢 <b>RE-ENTRY</b> | <b>{html.escape(sym)}</b> | month-end close ₹{hit['close']:.2f} back above "
+                f"{RISK_CONFIG.trend_exit_months}-month average ₹{hit['sma']:.2f} — consider buying back"
+            )
+    trend_md += (f"* Sold stocks watched for re-entry: {', '.join(watch) if watch else 'none'}"
+                 + (f"; re-entry signalled: {', '.join(reentries)}" if reentries else "") + "\n")
+    telegram_lines = urgent_lines + telegram_lines
+
     markdown_output = (
         f"# Orchestrated Multi-Agent Portfolio Audit - {date_str}\n\n"
         + perf_md
         + f"### Asset Health Assessment\n{report_df.to_markdown(index=False)}\n"
+        + trend_md
         + sector_summary_md
         + lookthrough_md
         + core_satellite_md
