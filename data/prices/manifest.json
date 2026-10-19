@@ -1,0 +1,379 @@
+{
+  "fetched_at_utc": "2026-10-15T14:37:49+00:00",
+  "files": {
+    "adj/537007.BO.csv": {
+      "first": "2017-06-01",
+      "rows": 2350,
+      "sha256": "f9cdac300164ae8302fe18153a308445d59a421045375701708c3620bd51ce2e"
+    },
+    "adj/ASHOKLEY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "72147969aff901edcecdb33fcd8177b002d73f52c7160ecbc45bf5b01e14b381"
+    },
+    "adj/BANKNIFTY1.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2315,
+      "sha256": "9e469636350a200ac57d0ed12515456321a21714545429f8cf110585bd40dd07"
+    },
+    "adj/BEL.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "de52e6cc6aa4b16274642d635eac1348a01e779be55c39775d4bce450763566e"
+    },
+    "adj/DRREDDY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "66cdd4cc5d8625af66af9c4c77d12fd34e7840140697a7807761a26a4444ce0c"
+    },
+    "adj/ENGINERSIN.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "075b8a5d7ea8b5f883636f0cd601760cb6490534814993176acdce641144b315"
+    },
+    "adj/FEDERALBNK.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "2fe27c22cf16f49857d402fb0c1f8eeb9d86a5307e00e01d8e2a79efde62f745"
+    },
+    "adj/GAIL.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "cbad16f4cc77657f736914cc909a6188ca3d5f909c57926a1149d9655db8f189"
+    },
+    "adj/GOLDIETF.NS.csv": {
+      "first": "2023-12-12",
+      "rows": 698,
+      "sha256": "a0ef31977e22191794d90882ca815d64a90b6f92381208593527af038feb3dbb"
+    },
+    "adj/GPPL.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "d9c37c7f00bb50a2ddb555915e3c128abd714d4305655aa9a900a3be3ee375e6"
+    },
+    "adj/GUJENERGY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2316,
+      "sha256": "75e71141a0accf7b7bd7adf8dfb92d80d6ede662856ac109f5740d1c4f82056d"
+    },
+    "adj/GUJGASLTD.NS.csv": {
+      "rows": 0
+    },
+    "adj/HDFCBANK.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "689873562a1ff0402dd689e819f1f148e7eae6a7c0d1488675543fbfd941c91e"
+    },
+    "adj/HDFCSML250.NS.csv": {
+      "first": "2023-02-21",
+      "rows": 896,
+      "sha256": "3a591c5c4a9eff94e2d6be4643e88c127ddaca81bd5aaaa89567f77770ece160"
+    },
+    "adj/HINDPETRO.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "d77d55790ca23bbb99db1fe630a61a6d49230bfab227b202c38a24eec832dfe5"
+    },
+    "adj/IDEA.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "fa912c00b40905bd161c7ffa9e01ac1fb1ad16dc6ffd7d2bec5692d188f3bfe9"
+    },
+    "adj/ITBEES.NS.csv": {
+      "first": "2020-06-30",
+      "rows": 1559,
+      "sha256": "a47e1491d289e44a68eaaab0333a018d5ba7fb7f1f56c8965aacce734ae44b91"
+    },
+    "adj/JIOFIN.NS.csv": {
+      "first": "2023-08-21",
+      "rows": 779,
+      "sha256": "5be1b1d700204bd22a0cdc3043f76fefbb46e67739a530051fb168e2416e507d"
+    },
+    "adj/JSWENERGY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "b26b4cc9d4f2e4171b29b6c0791a3cc20f946dd5050183a8857b9cc85e73af75"
+    },
+    "adj/LGEINDIA.NS.csv": {
+      "first": "2025-10-14",
+      "rows": 249,
+      "sha256": "54d31905cc5803474e49ca50ecd68ede1fafd1a3862092905b57e1f25da41124"
+    },
+    "adj/LICI.NS.csv": {
+      "first": "2022-05-17",
+      "rows": 1093,
+      "sha256": "b7d954fa0354b5610bd4a0514f87d2209647c0709673c4456b5ff5579184cff5"
+    },
+    "adj/MIDCAPETF.NS.csv": {
+      "first": "2024-06-19",
+      "rows": 574,
+      "sha256": "8029df775cf87b9e0db6e3076f4eb27dd2482b1a598cff2679210bd993865f16"
+    },
+    "adj/NHPC.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "5d111306a8cdeed3543fd00a28898635967f6c54f534ef58cb78e108394bc60b"
+    },
+    "adj/NIFTYBEES.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2315,
+      "sha256": "eabc61a73404a4c9285d0300d5ea6113ba5d558c148fc5d9126700c7279bf1b1"
+    },
+    "adj/NIFTYIETF.NS.csv": {
+      "first": "2023-12-12",
+      "rows": 629,
+      "sha256": "25cd3a14e27fb0889c57903410cd2c81d5588ac8675ccbc43226b8c61a64161a"
+    },
+    "adj/NTPC.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "625fa4a7196a7df5dede9708f8b69ef984b39a860017498bf18e74043a8240fb"
+    },
+    "adj/NTPCGREEN.NS.csv": {
+      "first": "2024-11-27",
+      "rows": 468,
+      "sha256": "c265e8f87d910882f895d96ab23f04c30076db75a1247baf2e27dcd98868103d"
+    },
+    "adj/ONGC.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "1ec87dd900d1224977657c217b029b26f0ef9f3f0eb8a8fbc703a90d0efd5b17"
+    },
+    "adj/PETRONET.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "362b8e5aead201d2770ecb7f52516e6531066cbdae39764e1c330196cb908b3f"
+    },
+    "adj/RELIANCE.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "74a44e71b50d2a79d873aa5ce5a23baa1d85db80adf7b4c1c309c5d9573a59da"
+    },
+    "adj/SEQUENT.NS.csv": {
+      "rows": 0
+    },
+    "adj/SILVERIETF.NS.csv": {
+      "first": "2025-02-03",
+      "rows": 417,
+      "sha256": "bb185465f51501eeccc7df7a3bf57fe1e84e4e4853a2a12af3c7784ee163cfea"
+    },
+    "adj/SJVN.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "42c1a200814c7f185dcd25ff85e21d07dd5af9bac09b567de2b424d7bb38b5cd"
+    },
+    "adj/TATACAP.NS.csv": {
+      "first": "2025-10-13",
+      "rows": 250,
+      "sha256": "7c63fae68a1c7d190f41867a34ed3559a66c11f0770ac110baad99bd0be5c577"
+    },
+    "adj/TATACONSUM.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "ad057c9dc7391c099bf8f09044a4fe077da2dd8cca59bef0962c43f1b1d626d9"
+    },
+    "adj/TATAPOWER.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "2077be2f5e28cd9a31a02dad7cd23eda6cf7fda2d1eb8c0f3a0fcb56538dde66"
+    },
+    "adj/VIYASH.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "59d14e0685f78fe0a78f61eee2ff6434df06836108edaad6f28887abd581957d"
+    },
+    "adj/WIPRO.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "b2de0d342eef3b70f2ac9f3c70c6825fc101e77d3bb79edd9fa2cc5b5c828089"
+    },
+    "raw/537007.BO.csv": {
+      "first": "2017-06-01",
+      "rows": 2350,
+      "sha256": "f9cdac300164ae8302fe18153a308445d59a421045375701708c3620bd51ce2e"
+    },
+    "raw/ASHOKLEY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "c8da127207b7cbdc768003309cb5b2a3bedf8f78a9cf6e0b41f2b0e5132d174d"
+    },
+    "raw/BANKNIFTY1.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2315,
+      "sha256": "9e469636350a200ac57d0ed12515456321a21714545429f8cf110585bd40dd07"
+    },
+    "raw/BEL.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "bed682faebc673c3b7075ccd13849ae6fa392e6140fff1319eaff7a5765b3da5"
+    },
+    "raw/DRREDDY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "7dced77c9b57261c7b4dc788e8ec0af484e9aeca31e716ec46123527a6c4a92b"
+    },
+    "raw/ENGINERSIN.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "54d719029d9a54cbc297c7559b8d2b6e9eb2cb466df2e4670b0aa8dd7a7db131"
+    },
+    "raw/FEDERALBNK.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "ae4b1fe24a1fca2836d1c3bf44f8a44c5be0aa85f0542829c0464129ae85be7c"
+    },
+    "raw/GAIL.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "ed9f87d0e7d5b5ba96b7a462c94e3a5d706d47cf0495741c90ffb24da3711e28"
+    },
+    "raw/GOLDIETF.NS.csv": {
+      "first": "2023-12-12",
+      "rows": 698,
+      "sha256": "a0ef31977e22191794d90882ca815d64a90b6f92381208593527af038feb3dbb"
+    },
+    "raw/GPPL.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "31f789f96104607c2b0d22663ab987c69256200a07f297e7c1a046c6ad82ae0c"
+    },
+    "raw/GUJENERGY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2316,
+      "sha256": "8790055d2d0245861fc8d4fdf90af9f5f6acfe1d28817dd95c1c99e954742474"
+    },
+    "raw/GUJGASLTD.NS.csv": {
+      "rows": 0
+    },
+    "raw/HDFCBANK.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "a02f99154873bb4e8489856f5089ab0eb759102201071e8de3ec7be6160dc8dc"
+    },
+    "raw/HDFCSML250.NS.csv": {
+      "first": "2023-02-21",
+      "rows": 896,
+      "sha256": "3a591c5c4a9eff94e2d6be4643e88c127ddaca81bd5aaaa89567f77770ece160"
+    },
+    "raw/HINDPETRO.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "e04570db32d504a2facb3572ae3ade6b3c4689a79adb7a13c8cb4813ae51b7be"
+    },
+    "raw/IDEA.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "fa912c00b40905bd161c7ffa9e01ac1fb1ad16dc6ffd7d2bec5692d188f3bfe9"
+    },
+    "raw/ITBEES.NS.csv": {
+      "first": "2020-06-30",
+      "rows": 1559,
+      "sha256": "a47e1491d289e44a68eaaab0333a018d5ba7fb7f1f56c8965aacce734ae44b91"
+    },
+    "raw/JIOFIN.NS.csv": {
+      "first": "2023-08-21",
+      "rows": 779,
+      "sha256": "49db541bac9c96c7ac61ba9615c00fce624168c9d8064c1aab6e53d7e487e005"
+    },
+    "raw/JSWENERGY.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "f69767b5676c7f1a153aee255921c2ab6362fc3396dc0c66345c4dbd6ae8cb15"
+    },
+    "raw/LGEINDIA.NS.csv": {
+      "first": "2025-10-14",
+      "rows": 249,
+      "sha256": "54d31905cc5803474e49ca50ecd68ede1fafd1a3862092905b57e1f25da41124"
+    },
+    "raw/LICI.NS.csv": {
+      "first": "2022-05-17",
+      "rows": 1093,
+      "sha256": "4df4905845eeace12aa2339c72f1e3c7926293be50f1d0bf05430f5bcfbf9348"
+    },
+    "raw/MIDCAPETF.NS.csv": {
+      "first": "2024-06-19",
+      "rows": 574,
+      "sha256": "8029df775cf87b9e0db6e3076f4eb27dd2482b1a598cff2679210bd993865f16"
+    },
+    "raw/NHPC.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "3aa9f48dc4697a1b71c2f3bf04a4fdb8685a7b69aab64854c9f513bfc387c48b"
+    },
+    "raw/NIFTYBEES.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2315,
+      "sha256": "eabc61a73404a4c9285d0300d5ea6113ba5d558c148fc5d9126700c7279bf1b1"
+    },
+    "raw/NIFTYIETF.NS.csv": {
+      "first": "2023-12-12",
+      "rows": 629,
+      "sha256": "25cd3a14e27fb0889c57903410cd2c81d5588ac8675ccbc43226b8c61a64161a"
+    },
+    "raw/NTPC.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "cf42d1d6370d4e2c37ee3969d3e4c0bbdfba20963b245c5fd7d26385603ec371"
+    },
+    "raw/NTPCGREEN.NS.csv": {
+      "first": "2024-11-27",
+      "rows": 468,
+      "sha256": "c265e8f87d910882f895d96ab23f04c30076db75a1247baf2e27dcd98868103d"
+    },
+    "raw/ONGC.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "82a1fe13341e7c1fb1be983fc98aaa4f5cebcc98e5815927becfd3802ccf1178"
+    },
+    "raw/PETRONET.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "4ee311be5ec82bf802091a89005d3c82ecd1d599b4650965f9d7b7e2f4950beb"
+    },
+    "raw/RELIANCE.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "d15559793bde9a306b9c43ebb42c78715dedf5738301c14c9638d1f72ff0c9c9"
+    },
+    "raw/SEQUENT.NS.csv": {
+      "rows": 0
+    },
+    "raw/SILVERIETF.NS.csv": {
+      "first": "2025-02-03",
+      "rows": 417,
+      "sha256": "bb185465f51501eeccc7df7a3bf57fe1e84e4e4853a2a12af3c7784ee163cfea"
+    },
+    "raw/SJVN.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "0c393e0430c04cc99cc5131023ed1259192efb6e5e93d3e5069fd818baf78243"
+    },
+    "raw/TATACAP.NS.csv": {
+      "first": "2025-10-13",
+      "rows": 250,
+      "sha256": "8e59d8e1a4e914206a1407663d360fe8a889d8db6d62a23ba247087d74fc1039"
+    },
+    "raw/TATACONSUM.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "0aaf2322f949b41154150fe8fa27ed60753718b25d77cae125d1a7e7c2bd5fe8"
+    },
+    "raw/TATAPOWER.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "c863b6a0730e6faa6e9cc068a6cedfc59fea426cd9185a7d561a4b4f0285af29"
+    },
+    "raw/VIYASH.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "6003e3d6d99ee3b8c25e4be7392720e44856ade0a6fd3697127af232ffd3d86d"
+    },
+    "raw/WIPRO.NS.csv": {
+      "first": "2017-06-01",
+      "rows": 2317,
+      "sha256": "7d3fe0fec5c5418c791f627014d04e259f2163e1857fddd164ea01e1b077f8ab"
+    }
+  },
+  "start": "2017-06-01",
+  "yfinance_version": "1.7.0"
+}

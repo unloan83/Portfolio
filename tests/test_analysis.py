@@ -1,9 +1,12 @@
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import numpy as np
 import pandas as pd
+import pytest
 
 import analysis
+from config import RiskConfig
 
 
 
@@ -36,7 +39,7 @@ def test_no_data_and_sector_cap_are_explicit(tmp_path, monkeypatch):
                 "Company Name": "Bullish Holding",
                 "Qty": 10,
                 "Average Cost Price": 100,
-                "Current Market Price": 200,
+                "Current Market Price": 310,
             },
             {
                 "Stock Symbol": "EMPTY",
@@ -157,7 +160,7 @@ def test_consecutive_run_suppresses_telegram_notification(tmp_path, monkeypatch)
                 "Company Name": "Bullish Holding",
                 "Qty": 10,
                 "Average Cost Price": 100,
-                "Current Market Price": 200,
+                "Current Market Price": 310,
             }
         ]
     )
@@ -190,3 +193,1002 @@ def test_consecutive_run_suppresses_telegram_notification(tmp_path, monkeypatch)
     mock_notifier2.assert_not_called()
 
 
+
+
+def test_gujarat_gas_ticker():
+    # GUJGASLTD is delisted (404); official post-merger ticker is GUJENERGY.NS
+    assert analysis.TICKER_MAP["GUJGA"] == "GUJENERGY.NS"
+
+
+def test_icinif_ticker_mapping():
+    # NIFTYIETF.NS has <200 bars; 537007.BO provides full 1y history
+    assert analysis.TICKER_MAP["ICINIF"] == "537007.BO"
+
+
+def test_adjust_unadjusted_splits_rescales_history():
+    close = pd.Series([500.0] * 150 + [50.0] * 100)  # 1:10 split not adjusted
+    frame = pd.DataFrame({"Close": close, "High": close * 1.01, "Low": close * 0.99})
+    adjusted = analysis.adjust_unadjusted_splits(frame)
+    assert np.allclose(adjusted["Close"], 50.0)
+    assert np.isclose(adjusted["High"].iloc[0], 50.5)
+    # Ordinary moves are left alone.
+    normal = pd.DataFrame({"Close": pd.Series([100.0, 110.0, 95.0])})
+    assert analysis.adjust_unadjusted_splits(normal).equals(normal)
+
+
+def test_price_data_issue_checks():
+    assert analysis.price_data_issue(237.58, 334.18, 401.15) is not None  # wrong ticker
+    assert analysis.price_data_issue(56.78, 203.97, 58.65) is not None  # broken history
+    assert analysis.price_data_issue(395.2, 420.0, 411.35) is None
+    assert analysis.price_data_issue(None, None, 100.0) is None
+
+
+class TrendTicker:
+    """Steady uptrend with High/Low so ATR is available."""
+
+    def __init__(self, symbol: str):
+        self.symbol = symbol
+        self.info = {"returnOnEquity": 0.20}
+
+    def history(self, period: str) -> pd.DataFrame:
+        close = pd.Series(np.linspace(100, 200, 250))
+        return pd.DataFrame({"Close": close, "High": close + 2, "Low": close - 2})
+
+
+def test_report_gives_sized_actions(tmp_path, monkeypatch):
+    portfolio = pd.DataFrame(
+        [
+            {"Stock Symbol": "BIG", "Company Name": "Big", "Qty": 300, "Average Cost Price": 150, "Current Market Price": 200},
+            {"Stock Symbol": "SMALL", "Company Name": "Small", "Qty": 10, "Average Cost Price": 150, "Current Market Price": 200},
+            {"Stock Symbol": "REST", "Company Name": "Rest", "Qty": 1000, "Average Cost Price": 150, "Current Market Price": 200},
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame(
+        [
+            {"Stock Symbol": s, "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+            for s in ("BIG", "SMALL", "REST")
+        ]
+    ).to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    for i, sym in enumerate(("BIG", "SMALL", "REST")):
+        monkeypatch.setitem(analysis.TICKER_MAP, sym, f"{sym}.NS")
+        monkeypatch.setitem(analysis.SECTOR_MAP, sym, f"Sector{i}")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+    monkeypatch.setenv("IS_MONTH_END", "1")
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    tracking = pd.read_csv(tmp_path / "re-engineering.csv").set_index("Stock_Symbol")
+    # BIG = 300 of 1310 shares = 22.9% > 8% cap -> trim 196 sh, just under the 8% cap.
+    assert tracking.loc["BIG", "Decision"] == "TRIM"
+    assert tracking.loc["BIG", "Recommended_Action"].startswith("Trim 196 sh")
+    assert "7.9% weight" in tracking.loc["BIG", "Recommended_Action"]
+    # SMALL is a bullish 0.8% holding -> ATR-sized buy with stop and target.
+    assert tracking.loc["SMALL", "Decision"] == "ACCUMULATE"
+    assert "buy" in tracking.loc["SMALL", "Recommended_Action"]
+    assert "stop ₹" in tracking.loc["SMALL", "Recommended_Action"]
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "| Action" in readme
+    assert "STRG SELL" not in readme and "| Signal" not in readme
+    # Sorted by numeric weight, largest first.
+    assert readme.index("| REST") < readme.index("| BIG") < readme.index("| SMALL")
+
+
+def test_sector_map_etfs_and_financials():
+    assert analysis.SECTOR_MAP["ICIGOL"] == "Commodities"
+    assert analysis.SECTOR_MAP["ICIPSE"] == "Commodities"
+    assert analysis.SECTOR_MAP["ICINIF"] == "Broad Market"
+    assert analysis.SECTOR_MAP["HDF250"] == "Broad Market"
+    assert analysis.SECTOR_MAP["MIR150"] == "Broad Market"
+    assert analysis.SECTOR_MAP["NIPNIT"] == "IT"
+    assert analysis.SECTOR_MAP["KOTAKBKETF"] == "Banking"
+    assert "Banking" in analysis.FINANCIALS_SECTORS
+    assert "Financial Services" in analysis.FINANCIALS_SECTORS
+    assert "Insurance" in analysis.FINANCIALS_SECTORS
+
+
+class MockPullbackTicker:
+    """Ticker that rose to 250, then pulled back to 160 with ATR ~10 (>30% drawdown, +60% gain)."""
+
+    def __init__(self, symbol: str):
+        self.symbol = symbol
+        self.info = {"returnOnEquity": 0.20}
+
+    def history(self, period: str) -> pd.DataFrame:
+        prices = list(np.linspace(100, 250, 230)) + list(np.linspace(250, 160, 20))
+        close = pd.Series(prices)
+        return pd.DataFrame({"Close": close, "High": close + 5, "Low": close - 5})
+
+
+def test_trailing_stop_rule_trims_half_winner(tmp_path, monkeypatch):
+    # WINNER holding: 80 shares @ cost 100, current price ~160, 52w high 255, ATR 10
+    # Invalidation price 80.
+    # 52w high - max(30%, 3*ATR) = 255 - max(76.5, 30) = 178.5.
+    # Price 160 is below trailing stop 178.5, well above invalidation 80.
+    # Total return: +60% >= 50% minimum gain.
+    portfolio = pd.DataFrame(
+        [
+            {"Stock Symbol": "WINNER", "Company Name": "Winner Co", "Qty": 300, "Average Cost Price": 100, "Current Market Price": 160},
+            {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 10000, "Average Cost Price": 100, "Current Market Price": 160},
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame(
+        [
+            {"Stock Symbol": "WINNER", "Thesis": "Growth thesis", "Conviction": "4/5", "Invalidation_Price": 80, "Last_Updated": "2026-10-01", "role": "core"},
+            {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "5/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01", "role": "core"},
+        ]
+    ).to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("IS_MONTH_END", "1")
+    monkeypatch.setitem(analysis.TICKER_MAP, "WINNER", "WINNER.NS")
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "WINNER", "Auto")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", MockPullbackTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    tracking = pd.read_csv(tmp_path / "re-engineering.csv").set_index("Stock_Symbol")
+    winner_row = tracking.loc["WINNER"]
+    assert winner_row["Decision"] == "TRIM"
+    assert winner_row["Rationale"].startswith("trailing stop hit")
+    # Sells 1/3 of 300 shares = 100 shares
+    assert winner_row["Recommended_Action"].startswith("Trim 100 sh")
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "| Trailing Stop" in readme
+    assert "trailing stop hit" in readme
+
+
+def test_thesis_invalidation_wins_over_trailing_stop():
+    from config import RiskConfig
+    from signal_engine import evaluate_signal
+
+    # Invalidation price 100. 52w high 150, ATR 10 -> trailing stop = 120.
+    # If price drops to 90 (below both 120 and 100), thesis invalidation wins (SELL, not TRIM).
+    res = evaluate_signal(
+        current_price=90.0,
+        dma_50=120.0,
+        dma_200=110.0,
+        roe=0.15,
+        invalidation_price=100.0,
+        high_52w=150.0,
+        atr=10.0,
+        stock_weight=3.0,
+        config=RiskConfig(),
+    )
+    assert res.decision == "SELL"
+    assert res.thesis_status == "INVALIDATED"
+
+
+def test_consolidation_section_in_report(tmp_path, monkeypatch):
+    # Total portfolio equity = 100k.
+    # CANDIDATE: Qty 5 @ 100 = 500 (0.5% weight < 1%), conviction 3 (< 5) -> Candidate!
+    # HIGH_CONV: Qty 5 @ 100 = 500 (0.5% weight < 1%), conviction 5 (>= 5) -> NOT Candidate!
+    # LARGE_POS: Qty 50 @ 100 = 5000 (5.0% weight > 1%), conviction 3 -> NOT Candidate!
+    # REST: Qty 940 @ 100 = 94,000 (94% weight) -> NOT Candidate.
+    portfolio = pd.DataFrame(
+        [
+            {"Stock Symbol": "CANDIDATE", "Company Name": "Small Low Conv", "Qty": 5, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "HIGH_CONV", "Company Name": "Small High Conv", "Qty": 5, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "LARGE_POS", "Company Name": "Large Low Conv", "Qty": 50, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "REST", "Company Name": "Rest", "Qty": 940, "Average Cost Price": 100, "Current Market Price": 100},
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame(
+        [
+            {"Stock Symbol": "CANDIDATE", "Thesis": "Thesis", "Conviction": "3/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "HIGH_CONV", "Thesis": "Thesis", "Conviction": "5/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "LARGE_POS", "Thesis": "Thesis", "Conviction": "3/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+            {"Stock Symbol": "REST", "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"},
+        ]
+    ).to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    for sym in ("CANDIDATE", "HIGH_CONV", "LARGE_POS", "REST"):
+        monkeypatch.setitem(analysis.TICKER_MAP, sym, f"{sym}.NS")
+        monkeypatch.setitem(analysis.SECTOR_MAP, sym, "TestSector")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Portfolio Consolidation" in readme
+    assert "CANDIDATE" in readme
+    assert "Exit all 5 sh" in readme
+    consolidation_section = readme.split("### Portfolio Consolidation")[1]
+    assert "CANDIDATE" in consolidation_section
+    assert "HIGH_CONV" not in consolidation_section
+    assert "LARGE_POS" not in consolidation_section
+
+
+def test_combined_financials_sector_cap(tmp_path, monkeypatch):
+    # Banking (15%) + Financial Services (6%) + Insurance (5%) = 26% > 25% cap.
+    portfolio = pd.DataFrame(
+        [
+            {"Stock Symbol": "BANK1", "Company Name": "Bank 1", "Qty": 150, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "FIN1", "Company Name": "Fin 1", "Qty": 60, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "INS1", "Company Name": "Ins 1", "Qty": 50, "Average Cost Price": 100, "Current Market Price": 100},
+            {"Stock Symbol": "OTHER", "Company Name": "Other", "Qty": 740, "Average Cost Price": 100, "Current Market Price": 100},
+        ]
+    )
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame(
+        [
+            {"Stock Symbol": s, "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+            for s in ("BANK1", "FIN1", "INS1", "OTHER")
+        ]
+    ).to_csv(tmp_path / "thesis.csv", index=False)
+    monkeypatch.chdir(tmp_path)
+    for s in ("BANK1", "FIN1", "INS1", "OTHER"):
+        monkeypatch.setitem(analysis.TICKER_MAP, s, f"{s}.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BANK1", "Banking")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "FIN1", "Financial Services")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "INS1", "Insurance")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "OTHER", "Power")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "* **Financials (combined)**:" in readme
+    assert "* **Banking**:" in readme
+    assert "* **Financial Services**:" in readme
+    assert "* **Insurance**:" in readme
+
+
+def test_xirr_math():
+    import performance
+
+    # 10% annual gain
+    r1 = performance.xirr([-100.0, 110.0], ["2025-01-01", "2026-01-01"])
+    assert r1 is not None
+    assert abs(r1 - 0.10) < 0.001
+
+    # -10% annual loss
+    r2 = performance.xirr([-100.0, 90.0], ["2025-01-01", "2026-01-01"])
+    assert r2 is not None
+    assert abs(r2 - (-0.10)) < 0.001
+
+    # Edge cases
+    assert performance.xirr([-100.0, -50.0], ["2025-01-01", "2026-01-01"]) is None
+    assert performance.xirr([100.0, 50.0], ["2025-01-01", "2026-01-01"]) is None
+    assert performance.xirr([], []) is None
+
+
+def test_performance_calculation_and_gaps():
+    import performance
+
+    trades = pd.DataFrame([
+        {"Date": "2024-01-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 100},
+        {"Date": "2024-06-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 120},
+        {"Date": "2024-01-01", "Stock Symbol": "STOCK_B", "Action": "BUY", "Qty": 5, "Price": 200},
+    ])
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "STOCK_A", "Qty": 20, "Current Market Price": 150},  # full (20/20)
+        {"Stock Symbol": "STOCK_B", "Qty": 10, "Current Market Price": 220},  # partial (5/10)
+        {"Stock Symbol": "STOCK_C", "Qty": 5, "Current Market Price": 50},    # missing completely
+    ])
+    bench_df = pd.DataFrame({
+        "Close": [1000.0, 1100.0, 1200.0]
+    }, index=pd.to_datetime(["2024-01-01", "2024-06-01", "2025-01-01"]))
+
+    res = performance.calculate_portfolio_and_benchmark_xirr(
+        trades_df=trades,
+        portfolio_df=portfolio,
+        current_prices={"STOCK_A": 150.0, "STOCK_B": 220.0, "STOCK_C": 50.0},
+        benchmark_history=bench_df,
+        valuation_date=datetime(2025, 1, 1),
+    )
+
+    assert res["portfolio_xirr"] is not None
+    assert res["benchmark_xirr"] is not None
+    assert res["missing_completely"] == ["STOCK_C"]
+    assert len(res["partial_history"]) == 1
+    assert res["partial_history"][0]["Stock Symbol"] == "STOCK_B"
+    assert res["partial_history"][0]["Difference"] == 5.0
+
+    md = performance.format_performance_markdown(res)
+    assert "### Portfolio Performance vs Benchmark" in md
+    assert "STOCK_C" in md
+    assert "STOCK_B" in md
+    assert "^NSEI" in md
+
+
+def test_performance_section_in_readme(tmp_path, monkeypatch):
+    trades = pd.DataFrame([
+        {"Date": "2024-01-01", "Stock Symbol": "BASE", "Action": "BUY", "Qty": 100, "Price": 100},
+    ])
+    trades.to_csv(tmp_path / "trades.csv", index=False)
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 120},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Portfolio Performance vs Benchmark" in readme
+    assert "### Asset Health Assessment" in readme
+    # Ensure Performance section appears at the top (before Asset Health Assessment)
+    perf_idx = readme.index("### Portfolio Performance vs Benchmark")
+    health_idx = readme.index("### Asset Health Assessment")
+    assert perf_idx < health_idx
+
+
+def test_risk_groups_config():
+    from config import RISK_CONFIG, RISK_GROUPS
+
+    assert RISK_CONFIG.max_risk_group_pct == 25.0
+    assert "Energy & Power" in RISK_GROUPS
+    assert "State-owned (PSU)" in RISK_GROUPS
+    assert "Financials" in RISK_GROUPS
+    assert "Precious metals" in RISK_GROUPS
+
+    psu_expected = [
+        "ONGC", "GAIL", "HINPET", "PETLNG", "NTPC", "NHPC",
+        "SJVLIM", "NTPGRE", "LIC", "BHAELE", "ENGIND", "GUJGA"
+    ]
+    for p in psu_expected:
+        assert p in RISK_GROUPS["State-owned (PSU)"]
+
+    assert "ICIGOL" in RISK_GROUPS["Precious metals"]
+    assert "ICIPSE" in RISK_GROUPS["Precious metals"]
+
+
+def test_risk_group_cap_triggers_trim():
+    from config import RiskConfig
+    from signal_engine import evaluate_signal
+
+    # Stock has 4.5% weight (>= max_pos/2 = 4.0%), risk group exposure is 28% (> 25% cap)
+    res = evaluate_signal(
+        current_price=100.0,
+        dma_50=95.0,
+        dma_200=90.0,
+        roe=0.15,
+        invalidation_price=80.0,
+        stock_weight=4.5,
+        sector_risk_exposure=15.0,
+        risk_group_exposure=28.0,
+        config=RiskConfig(max_risk_group_pct=25.0),
+    )
+    assert res.decision == "TRIM"
+    assert "Risk group cap breach" in res.rationale
+
+
+def test_lookthrough_effective_weights():
+    import lookthrough
+
+    port = pd.DataFrame([
+        {"Stock Symbol": "HDFBAN", "Weight_%": 15.0},
+        {"Stock Symbol": "ICINIF", "Weight_%": 4.0},
+        {"Stock Symbol": "KOTAKBKETF", "Weight_%": 2.0},
+    ])
+    mock_etf = {
+        "etfs": {
+            "ICINIF": {
+                "top_10": [{"symbol": "HDFBAN", "weight_pct": 10.0}]  # 4.0% * 10% = 0.4%
+            },
+            "KOTAKBKETF": {
+                "top_10": [{"symbol": "HDFBAN", "weight_pct": 25.0}]  # 2.0% * 25% = 0.5%
+            }
+        }
+    }
+    eff = lookthrough.calculate_effective_weights(port, mock_etf).set_index("Symbol")
+    # HDFBAN effective weight = 15.0 + 0.4 + 0.5 = 15.9%
+    assert abs(eff.loc["HDFBAN", "Effective_Weight"] - 15.9) < 0.01
+
+
+def test_lookthrough_and_risk_groups_in_readme(tmp_path, monkeypatch):
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "ONGC", "Company Name": "ONGC", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 100},
+        {"Stock Symbol": "BASE", "Company Name": "Base", "Qty": 900, "Average Cost Price": 100, "Current Market Price": 100},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": s, "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+        for s in ("ONGC", "BASE")
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "ONGC", "ONGC.NS")
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "ONGC", "Oil & Gas")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Risk Factor Groups Concentration" in readme
+    assert "### ETF Look-Through Effective Exposure" in readme
+
+
+def test_core_satellite_classification():
+    import core_satellite
+
+    assert core_satellite.classify_holding("ICINIF") == "Core"
+    assert core_satellite.classify_holding("HDF250") == "Core"
+    assert core_satellite.classify_holding("MIR150") == "Core"
+    assert core_satellite.classify_holding("HDFBAN") == "Satellite"
+    assert core_satellite.classify_holding("KOTAKBKETF") == "Satellite"
+    assert core_satellite.classify_holding("ICIGOL") == "Satellite"
+
+
+def test_core_satellite_calculation_and_ranking():
+    from config import RiskConfig
+    import core_satellite
+
+    port = pd.DataFrame([
+        {"Stock Symbol": "ICINIF", "Qty": 10, "Current Market Price": 250, "Weight_%": 25.0},
+        {"Stock Symbol": "HDFBAN", "Qty": 10, "Current Market Price": 700, "Weight_%": 40.0},
+        {"Stock Symbol": "FEDBAN", "Qty": 10, "Current Market Price": 300, "Weight_%": 20.0},
+        {"Stock Symbol": "TINY", "Qty": 10, "Current Market Price": 50, "Weight_%": 0.5},
+    ])
+    thesis = {
+        "HDFBAN": {"conviction": "5/5"},
+        "FEDBAN": {"conviction": "4/5"},
+        "TINY": {"conviction": "2/5"},
+        "ICINIF": {"conviction": "4/5"},
+    }
+    cfg = RiskConfig(target_core_pct=50.0, target_satellite_count=15)
+    res = core_satellite.calculate_core_satellite_view(port, thesis, cfg)
+
+    assert res["core_weight"] == 25.0
+    assert res["satellite_weight"] == 60.5
+    assert res["core_count"] == 1
+    assert res["satellite_count"] == 3
+
+    # Check ranking: HDFBAN (conv 5, wt 40), then FEDBAN (conv 4, wt 20), then TINY (conv 2, wt 0.5)
+    sat = res["satellite_holdings"]
+    assert sat[0]["Symbol"] == "HDFBAN"
+    assert sat[1]["Symbol"] == "FEDBAN"
+    assert sat[2]["Symbol"] == "TINY"
+
+    # TINY should be flagged to consolidate (conviction 2 < 4)
+    assert sat[2]["Consolidate"] is True
+    assert "Consolidate" in sat[2]["Status"]
+    assert sat[0]["Consolidate"] is False
+
+
+def test_core_satellite_in_readme(tmp_path, monkeypatch):
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "ICINIF", "Company Name": "Nifty ETF", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 100},
+        {"Stock Symbol": "BASE", "Company Name": "Base", "Qty": 900, "Average Cost Price": 100, "Current Market Price": 100},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": s, "Thesis": "Thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+        for s in ("ICINIF", "BASE")
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "ICINIF", "537007.BO")
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "ICINIF", "Broad Market")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Core / Satellite Portfolio Structure" in readme
+    assert "Core Allocation (Index ETFs)" in readme
+    assert "Satellite Allocation (Stocks & Thematic ETFs)" in readme
+
+
+def test_tax_planner_fifo_and_exemption():
+    from config import RiskConfig
+    import tax_planner
+
+    trades = pd.DataFrame([
+        # Lot 1: bought > 365 days ago (LTCG)
+        {"Date": "2024-01-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 100},
+        # Lot 2: bought recently (STCG)
+        {"Date": "2026-08-01", "Stock Symbol": "STOCK_A", "Action": "BUY", "Qty": 10, "Price": 150},
+        # Sell 5 shares in current FY (2026-05-01): FIFO matches against Lot 1
+        {"Date": "2026-05-01", "Stock Symbol": "STOCK_A", "Action": "SELL", "Qty": 5, "Price": 200},
+        # Losing position
+        {"Date": "2024-01-01", "Stock Symbol": "LOSER", "Action": "BUY", "Qty": 10, "Price": 200},
+    ])
+    port = pd.DataFrame([
+        {"Stock Symbol": "STOCK_A", "Qty": 15, "Current Market Price": 250},
+        {"Stock Symbol": "LOSER", "Qty": 10, "Current Market Price": 120},
+    ])
+
+    cfg = RiskConfig(stcg_rate=0.20, ltcg_rate=0.125, ltcg_exemption_limit=125000.0)
+    res = tax_planner.calculate_tax_plan(
+        trades_df=trades,
+        portfolio_df=port,
+        current_prices={"STOCK_A": 250.0, "LOSER": 120.0},
+        valuation_date=datetime(2026, 10, 13),
+        config=cfg,
+    )
+
+    # Realised LTCG on 5 shares: 5 * (200 - 100) = 500
+    assert res["realised_ltcg"] == 500.0
+    assert res["realised_stcg"] == 0.0
+
+    # Remaining exemption: 125000 - 500 = 124500
+    assert res["remaining_exemption"] == 124500.0
+
+    # Unrealised LTCG on remaining 5 shares of Lot 1: 5 * (250 - 100) = 750
+    assert res["unrealised_ltcg"] == 750.0
+    assert res["harvestable_tax_free_ltcg"] == 750.0  # since 750 < 124500
+
+    # Unrealised STCG on 10 shares of Lot 2: 10 * (250 - 150) = 1000
+    assert res["unrealised_stcg"] == 1000.0
+
+    # Loss harvest candidate: LOSER (loss = 10 * (200 - 120) = 800)
+    assert len(res["loss_harvest_candidates"]) == 1
+    assert res["loss_harvest_candidates"][0]["Symbol"] == "LOSER"
+    assert res["loss_harvest_candidates"][0]["Unrealised Loss"] == 800.0
+
+    md = tax_planner.format_tax_plan_markdown(res, cfg)
+    assert "### Tax Plan" in md
+    assert "Advisory Notice" in md
+    assert "20.0%" in md
+    assert "12.5%" in md
+    assert "LOSER" in md
+
+
+def test_tax_plan_in_readme(tmp_path, monkeypatch):
+    trades = pd.DataFrame([
+        {"Date": "2024-01-01", "Stock Symbol": "BASE", "Action": "BUY", "Qty": 100, "Price": 100},
+    ])
+    trades.to_csv(tmp_path / "trades.csv", index=False)
+    portfolio = pd.DataFrame([
+        {"Stock Symbol": "BASE", "Company Name": "Base Co", "Qty": 100, "Average Cost Price": 100, "Current Market Price": 120},
+    ])
+    portfolio.to_csv(tmp_path / "portfolio.csv", index=False)
+    pd.DataFrame([
+        {"Stock Symbol": "BASE", "Thesis": "Base thesis", "Conviction": "4/5", "Invalidation_Price": 50, "Last_Updated": "2026-10-01"}
+    ]).to_csv(tmp_path / "thesis.csv", index=False)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(analysis.TICKER_MAP, "BASE", "BASE.NS")
+    monkeypatch.setitem(analysis.SECTOR_MAP, "BASE", "Defense")
+    monkeypatch.setattr(analysis.yf, "Ticker", TrendTicker)
+
+    analysis.run_weekly_analysis(notify_fn=MagicMock())
+
+    readme = (tmp_path / "README.md").read_text()
+    assert "### Tax Plan" in readme
+    assert "Advisory Notice" in readme
+    assert "config.py" in readme
+
+
+def test_backtest_engine_simulation_and_report(tmp_path):
+    import backtest_engine
+
+    # Generate 60 weeks of synthetic data
+    dates = pd.date_range("2021-01-01", periods=60, freq="W-FRI")
+
+    # Stock A (uptrend)
+    prices_a = [100.0 * (1.01 ** i) for i in range(60)]
+    df_a = pd.DataFrame({
+        "Open": prices_a,
+        "High": [p * 1.02 for p in prices_a],
+        "Low": [p * 0.98 for p in prices_a],
+        "Close": prices_a,
+        "Volume": [1000] * 60,
+    }, index=dates)
+
+    # Stock B (downtrend)
+    prices_b = [100.0 * (0.99 ** i) for i in range(60)]
+    df_b = pd.DataFrame({
+        "Open": prices_b,
+        "High": [p * 1.02 for p in prices_b],
+        "Low": [p * 0.98 for p in prices_b],
+        "Close": prices_b,
+        "Volume": [1000] * 60,
+    }, index=dates)
+
+    weekly_data = {"STKA": df_a, "STKB": df_b}
+
+    # Benchmark (^NSEI)
+    bench_df = pd.DataFrame({
+        "Close": [15000.0 * (1.005 ** i) for i in range(60)],
+    }, index=dates)
+
+    thesis_dict = {
+        "STKA": {"conviction": 5, "invalidation_price": 80.0, "thesis": "Growth"},
+        "STKB": {"conviction": 2, "invalidation_price": 90.0, "thesis": "Value"},
+    }
+
+    res = backtest_engine.run_5y_decision_engine_backtest(
+        weekly_data=weekly_data,
+        benchmark_weekly=bench_df,
+        thesis_dict=thesis_dict,
+        initial_capital=100000.0,
+        fee_rate=0.002,
+    )
+
+    assert "engine_metrics" in res
+    assert "bnh_metrics" in res
+    assert "nifty_metrics" in res
+    assert res["engine_metrics"]["Start_Value"] > 0
+    assert res["engine_metrics"]["End_Value"] > 0
+    assert isinstance(res["engine_metrics"]["CAGR"], float)
+    assert isinstance(res["engine_metrics"]["Max_Drawdown"], float)
+    assert isinstance(res["engine_metrics"]["Turnover_Pct"], float)
+
+    out_file = str(tmp_path / "test_backtest_summary.md")
+    report = backtest_engine.generate_backtest_summary_report(res, output_path=out_file)
+    assert "Multi-Agent Decision Engine: 5-Year Walk-Forward Backtest Summary" in report
+    assert "Decision Engine (evaluate_signal)" in report
+    assert "Buy-and-Hold" in report
+    assert "Benchmark: Nifty 50" in report
+    assert (tmp_path / "test_backtest_summary.md").exists()
+
+
+# ==============================================================================
+# PART 5 DEDICATED TESTS: Sector Excess, Minimum Trade, As-Of Check, Thesis
+# ==============================================================================
+
+def test_sector_excess_pro_rata_trims():
+    # Holdings at 20/5/3% in a sector capped at 25% have trims that sum to the 3% excess, split 20:5:3.
+    # Total portfolio value = 2,800,000. Price = 1,000 for each holding.
+    # Other sectors are each <= 25% (Auto: 24%, Infra: 24%, Pharma: 24%)
+    df = pd.DataFrame([
+        {"Stock Symbol": "STKA", "Sector": "Tech", "Weight_%": 20.0, "Current_Value": 560000.0, "Qty": 560, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "STKB", "Sector": "Tech", "Weight_%": 5.0, "Current_Value": 140000.0, "Qty": 140, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "STKC", "Sector": "Tech", "Weight_%": 3.0, "Current_Value": 84000.0, "Qty": 84, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "OTH1", "Sector": "Auto", "Weight_%": 24.0, "Current_Value": 672000.0, "Qty": 672, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "OTH2", "Sector": "Infra", "Weight_%": 24.0, "Current_Value": 672000.0, "Qty": 672, "Valuation_Price": 1000.0},
+        {"Stock Symbol": "OTH3", "Sector": "Pharma", "Weight_%": 24.0, "Current_Value": 672000.0, "Qty": 672, "Valuation_Price": 1000.0},
+    ])
+    total_val = 2800000.0
+    config = RiskConfig(max_sector_pct=25.0)
+
+    # 1. Check excess weight percentage
+    pct_map = analysis.compute_group_excess_pct(df, config=config, risk_group_exposures={})
+    assert pct_map["STKA"] == pytest.approx(3.0 * (20.0 / 28.0), rel=1e-4)
+    assert pct_map["STKB"] == pytest.approx(3.0 * (5.0 / 28.0), rel=1e-4)
+    assert pct_map["STKC"] == pytest.approx(3.0 * (3.0 / 28.0), rel=1e-4)
+    assert pct_map["OTH1"] == 0.0
+    assert pct_map["OTH2"] == 0.0
+    assert pct_map["OTH3"] == 0.0
+
+    # Trims sum to the 3% excess
+    total_excess_pct = pct_map["STKA"] + pct_map["STKB"] + pct_map["STKC"]
+    assert total_excess_pct == pytest.approx(3.0, rel=1e-4)
+
+    # Split is 20:5:3
+    ratio_a = pct_map["STKA"] / 20.0
+    ratio_b = pct_map["STKB"] / 5.0
+    ratio_c = pct_map["STKC"] / 3.0
+    assert ratio_a == pytest.approx(ratio_b, rel=1e-4)
+    assert ratio_b == pytest.approx(ratio_c, rel=1e-4)
+
+    # 2. Check excess share counts
+    shares_map = analysis.compute_group_excess_shares(df, total_portfolio_value=total_val, config=config, risk_group_exposures={})
+    assert shares_map["STKA"] == 60
+    assert shares_map["STKB"] == 15
+    assert shares_map["STKC"] == 9
+    assert shares_map["STKA"] + shares_map["STKB"] + shares_map["STKC"] == 84  # 84 sh * 1000 = 84,000 (3% of 2.8M)
+
+
+def test_minimum_trade_suppression_and_consolidation_exception():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    risk_manager = MagicMock()
+    config = RiskConfig(minimum_trade_value=10000.0, max_position_pct=8.0)
+
+    # 1. TRIM below ₹10,000 -> "Hold (below minimum trade)"
+    eval_trim = SimpleNamespace(
+        decision="TRIM",
+        recommended_action="Trim",
+        rationale="trailing stop hit",
+        trailing_stop_hit=True,
+        conviction=4.0,
+    )
+    # 5 shares @ 1000 = ₹5,000 (< 10,000)
+    act_trim = analysis.size_action(
+        eval_trim,
+        qty=15,
+        price=1000.0,
+        total_value=500000.0,
+        stock_weight=3.0,
+        sector="Tech",
+        sector_weight=10.0,
+        atr_value=50.0,
+        risk_manager=risk_manager,
+        symbol="TINY",
+        config=config,
+    )
+    assert act_trim == "Hold (below minimum trade)"
+
+    # 2. Full exit (SELL) below ₹10,000 WITHOUT consolidation (e.g. conviction 5/5 or weight >= 1%) -> suppressed
+    eval_sell_high_conv = SimpleNamespace(
+        decision="SELL",
+        recommended_action="Exit",
+        rationale="invalidation breached",
+        conviction=5.0,  # high conviction, not a consolidation candidate
+        trailing_stop_hit=False,
+    )
+    # Position value = 8 shares @ 1000 = ₹8,000 (< 10,000), weight 0.8%
+    act_sell_suppressed = analysis.size_action(
+        eval_sell_high_conv,
+        qty=8,
+        price=1000.0,
+        total_value=1000000.0,
+        stock_weight=0.8,
+        sector="Tech",
+        sector_weight=10.0,
+        atr_value=50.0,
+        risk_manager=risk_manager,
+        symbol="TAIL",
+        config=config,
+        is_consolidation=False,
+    )
+    assert act_sell_suppressed == "Hold (below minimum trade)"
+
+    # 3. Full exit (SELL) below ₹10,000 WITH consolidation (weight < 1.0% and conviction < 5) -> allowed!
+    eval_sell_consolidation = SimpleNamespace(
+        decision="SELL",
+        recommended_action="Exit",
+        rationale="invalidation breached",
+        conviction=3.0,  # conviction < 5 and weight < 1%
+        trailing_stop_hit=False,
+    )
+    act_sell_allowed = analysis.size_action(
+        eval_sell_consolidation,
+        qty=8,
+        price=1000.0,
+        total_value=1000000.0,
+        stock_weight=0.8,
+        sector="Tech",
+        sector_weight=10.0,
+        atr_value=50.0,
+        risk_manager=risk_manager,
+        symbol="TAIL",
+        config=config,
+        is_consolidation=True,
+    )
+    assert act_sell_allowed.startswith("Exit all 8 sh")
+
+
+def test_as_of_check():
+    config = RiskConfig(portfolio_as_of="2026-09-26", price_mismatch_pct=20.0, max_price_to_dma_ratio=2.5)
+
+    # A 40% move since 2026-09-26 with matching as-of close -> NOT flagged
+    # Broker price = 100.0, as-of close on 2026-09-26 = 100.0 (gap = 0%)
+    # Live price today = 140.0 (+40% real market move since as-of date)
+    issue_match = analysis.price_data_issue(
+        live_price=140.0,
+        dma_200=120.0,
+        broker_price=100.0,
+        config=config,
+        as_of_price=100.0,
+    )
+    assert issue_match is None
+
+    # An as-of close 40% off the broker price -> FLAGGED
+    # Broker price = 100.0, as-of close = 140.0 (40% gap on that date -> data error / corporate action)
+    issue_mismatch = analysis.price_data_issue(
+        live_price=140.0,
+        dma_200=120.0,
+        broker_price=100.0,
+        config=config,
+        as_of_price=140.0,
+    )
+    assert issue_mismatch is not None
+    assert "differs from broker price" in issue_mismatch
+    assert "+40.0%" in issue_mismatch
+
+
+def test_thesis_invalidated_rows_unchanged():
+    # Verify that currently invalidated holdings have their Invalidation_Price preserved exactly
+    expected_invalidation_prices = {
+        "LIC": 790.25,
+        "WIPRO": 208.04,
+        "GUJGA": 430.75,
+        "SJVLIM": 80.58,
+        "ICIPSE": 231.16,
+        "ICIGOL": 131.80,
+        "JSWENE": 468.00,
+        "NTPGRE": 99.36,
+        "HINPET": 342.25,
+    }
+    thesis_df = pd.read_csv("thesis.csv").set_index("Stock Symbol")
+    for sym, exp_inv in expected_invalidation_prices.items():
+        assert sym in thesis_df.index
+        actual_inv = float(thesis_df.loc[sym, "Invalidation_Price"])
+        assert actual_inv == pytest.approx(exp_inv), f"{sym} Invalidation_Price changed from {exp_inv} to {actual_inv}"
+
+
+def test_no_lookahead_feature_truncation():
+    """Item C: No-lookahead truncation tests for every new feature.
+
+    Verifies that for arbitrary random cutoffs t, features computed on data[:t]
+    are strictly equal to features computed on the full series sliced at t:
+    1. consecutive-close counts (sessions_below_200dma & invalidation closes)
+    2. month-end detection (is_month_end)
+    3. 200-DMA rising check (dma_200_rising & dma_200_20_ago)
+    4. 6/12-month momentum (vol_adj_return_6m & vol_adj_return_12m)
+    5. 52w high/low (high_52w & low_52w)
+
+    Also verifies strict future invariance: mutating future data (data[t:])
+    has zero impact on features evaluated as of t.
+    """
+    import random
+
+    n_days = 500
+    dates = pd.bdate_range(start="2023-01-02", periods=n_days)
+    np.random.seed(12345)
+    daily_returns = np.random.normal(0.0003, 0.015, size=n_days)
+    close_vals = 100.0 * np.exp(np.cumsum(daily_returns))
+    high_vals = close_vals * (1.0 + np.abs(np.random.normal(0, 0.008, size=n_days)))
+    low_vals = close_vals * (1.0 - np.abs(np.random.normal(0, 0.008, size=n_days)))
+
+    full_df = pd.DataFrame(
+        {"Close": close_vals, "High": high_vals, "Low": low_vals, "Open": close_vals},
+        index=dates,
+    )
+
+    # Pre-calculate full rolling series for ground-truth comparison
+    full_dma200 = full_df["Close"].rolling(200).mean()
+    breach_cutoff = full_dma200 * (1.0 - 0.03)
+
+    rng = random.Random(98765)
+    random_t_cutoffs = rng.sample(range(260, n_days - 20), 8)
+
+    for t in random_t_cutoffs:
+        sliced_df = full_df.iloc[:t].copy()
+        feats_sliced = analysis.compute_market_features(sliced_df)
+
+        # 1. 200-DMA rising check & values
+        expected_dma_200 = float(full_dma200.iloc[t - 1])
+        expected_dma_20_ago = float(full_dma200.iloc[t - 21])
+        expected_rising = bool(expected_dma_200 > expected_dma_20_ago)
+
+        assert feats_sliced["dma_200"] == pytest.approx(expected_dma_200, rel=1e-6)
+        assert feats_sliced["dma_200_20_ago"] == pytest.approx(expected_dma_20_ago, rel=1e-6)
+        assert feats_sliced["dma_200_rising"] == expected_rising
+
+        # 2. Month-end detection
+        expected_month_end = bool(
+            (full_df.index[t - 1] + pd.offsets.BDay(1)).month != full_df.index[t - 1].month
+        )
+        assert feats_sliced["is_month_end"] == expected_month_end
+
+        # 3. 6-month and 12-month vol-adjusted momentum
+        # 6m: trailing 126 sessions
+        r6 = float(full_df["Close"].iloc[t - 1] / full_df["Close"].iloc[t - 126] - 1.0)
+        std6 = float(full_df["Close"].iloc[t - 126 : t].pct_change().dropna().std() * (252**0.5))
+        expected_6m = (r6 / std6) if std6 > 0 else (1.0 if r6 > 0 else -1.0)
+        assert feats_sliced["vol_adj_return_6m"] == pytest.approx(expected_6m, rel=1e-5)
+
+        # 12m: trailing 252 sessions (or available if < 252)
+        lookback_12m = 252 if t >= 252 else t
+        r12 = float(full_df["Close"].iloc[t - 1] / full_df["Close"].iloc[t - lookback_12m] - 1.0)
+        ret12 = full_df["Close"].iloc[t - lookback_12m : t].pct_change().dropna()
+        std12 = float(ret12.std() * (252**0.5)) if len(ret12) > 1 else 0.0
+        expected_12m = (r12 / std12) if std12 > 0 else (1.0 if r12 > 0 else -1.0)
+        assert feats_sliced["vol_adj_return_12m"] == pytest.approx(expected_12m, rel=1e-5)
+
+        # 4. 52w high and low
+        expected_52w_high = float(full_df["High"].iloc[t - 252 : t].max())
+        expected_52w_low = float(full_df["Low"].iloc[t - 252 : t].min())
+        assert feats_sliced["high_52w"] == pytest.approx(expected_52w_high, rel=1e-6)
+        assert feats_sliced["low_52w"] == pytest.approx(expected_52w_low, rel=1e-6)
+
+        # 5. Consecutive-close counts:
+        # a) sessions_below_200dma
+        c_sessions_full = 0
+        for c_px, b_px in zip(
+            reversed(full_df["Close"].iloc[:t].values),
+            reversed(breach_cutoff.iloc[:t].values),
+        ):
+            if pd.notna(c_px) and pd.notna(b_px) and c_px < b_px:
+                c_sessions_full += 1
+            else:
+                break
+        assert feats_sliced["sessions_below_200dma"] == c_sessions_full
+
+        # b) consecutive closes below invalidation level
+        test_inv_level = float(full_df["Close"].iloc[t - 1]) * 1.02
+        c_inv_sliced = 0
+        for val in reversed(sliced_df["Close"].values):
+            if val <= test_inv_level:
+                c_inv_sliced += 1
+            else:
+                break
+        c_inv_full = 0
+        for val in reversed(full_df["Close"].iloc[:t].values):
+            if val <= test_inv_level:
+                c_inv_full += 1
+            else:
+                break
+        assert c_inv_sliced == c_inv_full
+
+        # 6. Future Data Mutation Invariance (Leakage Trap)
+        # Mutate the future series starting at index t into extreme values
+        future_corrupted = full_df.copy()
+        future_corrupted.iloc[t:, future_corrupted.columns.get_loc("Close")] = 999999.0
+        future_corrupted.iloc[t:, future_corrupted.columns.get_loc("High")] = 1999999.0
+        future_corrupted.iloc[t:, future_corrupted.columns.get_loc("Low")] = 0.0001
+        corrupted_slice = future_corrupted.iloc[:t].copy()
+        feats_corrupted = analysis.compute_market_features(corrupted_slice)
+
+        assert feats_corrupted["dma_200_rising"] == feats_sliced["dma_200_rising"]
+        assert feats_corrupted["is_month_end"] == feats_sliced["is_month_end"]
+        assert feats_corrupted["vol_adj_return_6m"] == pytest.approx(feats_sliced["vol_adj_return_6m"])
+        assert feats_corrupted["vol_adj_return_12m"] == pytest.approx(feats_sliced["vol_adj_return_12m"])
+        assert feats_corrupted["high_52w"] == pytest.approx(feats_sliced["high_52w"])
+        assert feats_corrupted["low_52w"] == pytest.approx(feats_sliced["low_52w"])
+        assert feats_corrupted["sessions_below_200dma"] == feats_sliced["sessions_below_200dma"]
+
+        # 7. End-to-end signal decision invariance under future corruption
+        from signal_engine import evaluate_signal
+        sig_sliced = evaluate_signal(
+            current_price=feats_sliced["price"],
+            dma_50=feats_sliced["dma_50"],
+            dma_200=feats_sliced["dma_200"],
+            price_history=sliced_df["Close"],
+            high_52w=feats_sliced["high_52w"],
+            sessions_below_200dma=feats_sliced["sessions_below_200dma"],
+            dma_200_rising=feats_sliced["dma_200_rising"],
+            vol_adj_return_6m=feats_sliced["vol_adj_return_6m"],
+            vol_adj_return_12m=feats_sliced["vol_adj_return_12m"],
+            is_month_end=feats_sliced["is_month_end"],
+            invalidation_price=test_inv_level,
+            total_return=0.15,
+            conviction=4.0,
+            stock_weight=3.0,
+        )
+        sig_corrupted = evaluate_signal(
+            current_price=feats_corrupted["price"],
+            dma_50=feats_corrupted["dma_50"],
+            dma_200=feats_corrupted["dma_200"],
+            price_history=corrupted_slice["Close"],
+            high_52w=feats_corrupted["high_52w"],
+            sessions_below_200dma=feats_corrupted["sessions_below_200dma"],
+            dma_200_rising=feats_corrupted["dma_200_rising"],
+            vol_adj_return_6m=feats_corrupted["vol_adj_return_6m"],
+            vol_adj_return_12m=feats_corrupted["vol_adj_return_12m"],
+            is_month_end=feats_corrupted["is_month_end"],
+            invalidation_price=test_inv_level,
+            total_return=0.15,
+            conviction=4.0,
+            stock_weight=3.0,
+        )
+        assert sig_sliced.decision == sig_corrupted.decision
+        assert sig_sliced.signal == sig_corrupted.signal
+        assert sig_sliced.recommended_action == sig_corrupted.recommended_action
+
+
+
+
+
+
+
+
+
+
+def test_quant_validation_doc_matches_config():
+    """reports/quant_validation.md must quote the thresholds the code actually uses."""
+    import re
+    from pathlib import Path
+    from config import RISK_CONFIG
+
+    doc = (Path(__file__).resolve().parent.parent / "reports" / "quant_validation.md").read_text()
+    pct = re.search(r"\\pm (\d+(?:\.\d+)?)\\%\$ \(`price_mismatch_pct`\)", doc)
+    assert pct and float(pct.group(1)) == RISK_CONFIG.price_mismatch_pct
+    ratio = re.search(r"\(\$> (\d+(?:\.\d+)?)\\times\$ or \$< (\d+(?:\.\d+)?)\\times\$ 200-DMA, `max_price_to_dma_ratio`\)", doc)
+    assert ratio
+    assert float(ratio.group(1)) == RISK_CONFIG.max_price_to_dma_ratio
+    assert abs(float(ratio.group(2)) - 1 / RISK_CONFIG.max_price_to_dma_ratio) < 1e-9
+    assert "not** caught" in doc

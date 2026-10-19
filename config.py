@@ -36,6 +36,84 @@ class RiskConfig:
     atr_target_multiple: float = _float("ATR_TARGET_MULTIPLE", 4.0)
     minimum_roe: float = _float("MINIMUM_ROE", 0.10)
     overextension_multiple: float = _float("OVEREXTENSION_MULTIPLE", 1.25)
+    # Fraction of an overextended position to trim (no cap is breached, so
+    # there is no natural target weight to trim down to).
+    overextension_trim_fraction: float = _float("OVEREXTENSION_TRIM_FRACTION", 0.25)
+    # Live (Yahoo) price vs broker price in portfolio.csv: a larger gap means
+    # one of the two is wrong (bad ticker, unadjusted corporate action, stale
+    # CSV), so the row is flagged instead of acted on.
+    price_mismatch_pct: float = _float("PRICE_MISMATCH_PCT", 25.0)
+    # Price / 200 DMA outside [1/x, x] cannot happen through normal trading and
+    # indicates a broken price history.
+    max_price_to_dma_ratio: float = _float("MAX_PRICE_TO_DMA_RATIO", 2.5)
+    # Trailing stop distance from 52-week high in multiples of ATR (default 3x ATR).
+    trailing_stop_atr_multiple: float = _float("TRAILING_STOP_ATR_MULTIPLE", 3.0)
+    # Minimum total return % to arm the trailing stop (Kaminski & Lo momentum lock-in)
+    trailing_min_gain_pct: float = _float("TRAILING_MIN_GAIN_PCT", 50.0)
+    # Minimum drawdown % from 52-week high required to fire trailing stop (AUT/ACFR stop-loss evidence)
+    trailing_drawdown_pct: float = _float("TRAILING_DRAWDOWN_PCT", 30.0)
+    # Multiple of ATR14 below 52-week high required for trailing stop distance
+    trailing_atr_multiple: float = _float("TRAILING_ATR_MULTIPLE", 3.0)
+    # Fraction of position trimmed when trailing stop fires (1/3 for long-term compounding)
+    trailing_trim_fraction: float = _float("TRAILING_TRIM_FRACTION", 1.0 / 3.0)
+    # Consecutive daily closes below invalidation price required to escalate REVIEW to SELL
+    invalidation_confirm_closes: int = _int("INVALIDATION_CONFIRM_CLOSES", 3)
+    # Percentage breach below invalidation price for immediate single-close SELL escalation
+    invalidation_gap_pct: float = _float("INVALIDATION_GAP_PCT", 10.0)
+    # Percentage below 200-DMA required to enter trend breakdown REVIEW
+    dma_200_breach_pct: float = _float("DMA_200_BREACH_PCT", 3.0)
+    # Consecutive daily closes below 200-DMA threshold required to enter trend REVIEW
+    dma_200_breach_sessions: int = _int("DMA_200_BREACH_SESSIONS", 20)
+    # Percentage above 200-DMA required to exit trend REVIEW under hysteresis band
+    dma_200_exit_pct: float = _float("DMA_200_EXIT_PCT", 2.0)
+    # Maximum percentage distance below 52-week high allowed for ACCUMULATE
+    accumulate_high_52w_pct: float = _float("ACCUMULATE_HIGH_52W_PCT", 20.0)
+    # Minimum trade rupee value threshold to prevent sub-scale transaction churn
+    minimum_trade_value: float = _float("MINIMUM_TRADE_VALUE", 10000.0)
+    # Maximum risk factor group cap (default 25%)
+    max_risk_group_pct: float = _float("MAX_RISK_GROUP_PCT", 25.0)
+    # Core/Satellite structure targets
+    target_core_pct: float = _float("TARGET_CORE_PCT", 50.0)
+    target_satellite_count: int = _int("TARGET_SATELLITE_COUNT", 15)
+    # Tax planning config (Indian equity rates)
+    stcg_rate: float = _float("STCG_RATE", 0.20)
+    ltcg_rate: float = _float("LTCG_RATE", 0.125)
+    ltcg_exemption_limit: float = _float("LTCG_EXEMPTION_LIMIT", 125000.0)
+    # Broad index ETFs exempt from trailing stops and single-stock stop-loss rules
+    broad_index_etfs: tuple[str, ...] = ("ICINIF", "HDF250", "MIR150")
+    # Per-stock trend exit (reports/loss_control_test.md): SELL when the last
+    # month-end close is below the average of the last N month-end closes; re-entry
+    # alert when a sold stock's month-end close is back above. Individual stocks only.
+    trend_exit_enabled: bool = os.getenv("TREND_EXIT_ENABLED", "true").strip().lower() in ("true", "1", "yes")
+    trend_exit_months: int = _int("TREND_EXIT_MONTHS", 10)
+    trend_exit_exempt: tuple[str, ...] = ("ICINIF", "HDF250", "MIR150", "NIPNIT", "KOTAKBKETF", "ICIGOL", "ICIPSE")
+    # Market-wide warning: Nifty 50 ETF vs its 200-day SMA with a +/-2% band.
+    market_trend_ticker: str = "NIFTYBEES.NS"
+    market_trend_sma_days: int = _int("MARKET_TREND_SMA_DAYS", 200)
+    market_trend_band_pct: float = _float("MARKET_TREND_BAND_PCT", 2.0)
+    # Portfolio snapshot as-of date for verifying broker prices against historical closes
+    portfolio_as_of: str = os.getenv("PORTFOLIO_AS_OF", "2026-09-26")
 
 
 RISK_CONFIG = RiskConfig()
+PORTFOLIO_AS_OF = RISK_CONFIG.portfolio_as_of
+
+# Predefined Risk Factor Groups mapping symbols to thematic/structural risk buckets
+RISK_GROUPS: dict[str, list[str]] = {
+    "Energy & Power": [
+        "TATPOW", "NTPC", "NHPC", "SJVLIM", "NTPGRE", "JSWENE",
+        "ONGC", "GAIL", "HINPET", "PETLNG", "RELIND", "GUJGA"
+    ],
+    "State-owned (PSU)": [
+        "ONGC", "GAIL", "HINPET", "PETLNG", "NTPC", "NHPC",
+        "SJVLIM", "NTPGRE", "LIC", "BHAELE", "ENGIND", "GUJGA"
+    ],
+    "Financials": [
+        "FEDBAN", "HDFBAN", "KOTAKBKETF", "JIOFIN", "TATCAP", "LIC"
+    ],
+    "Precious metals": [
+        "ICIGOL", "ICIPSE"
+    ],
+}
+
+

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from typing import Mapping, Optional, Protocol
 
@@ -67,6 +68,7 @@ class RiskManager:
         entry_price: float,
         atr_value: float,
         sector: str = "unknown",
+        current_position_value: float = 0.0,
     ) -> SizingResult:
         if self.kill_switch_triggered():
             return SizingResult(False, 0, "Daily loss kill-switch active — no new entries today.")
@@ -90,11 +92,20 @@ class RiskManager:
         target_price = entry_price + atr_value * self.config.atr_target_multiple
         risk_amount = equity * (self.config.risk_per_trade_pct / 100)
         qty_by_risk = risk_amount / stop_distance
-        qty_by_position_cap = (
-            equity * (self.config.max_position_pct / 100) / entry_price
-        )
+        # Adding to an existing holding only has the room left under the cap.
+        qty_by_position_cap = max(
+            0.0,
+            equity * (self.config.max_position_pct / 100) - current_position_value,
+        ) / entry_price
 
-        sector_exposure = self.portfolio.exposure_by_sector().get(sector, 0.0)
+        financials_group = ("Banking", "Financial Services", "Insurance")
+        if sector in financials_group:
+            sector_exposure = sum(
+                self.portfolio.exposure_by_sector().get(s, 0.0)
+                for s in financials_group
+            )
+        else:
+            sector_exposure = self.portfolio.exposure_by_sector().get(sector, 0.0)
         remaining_sector_room_pct = max(
             0.0, self.config.max_sector_pct - sector_exposure
         )
@@ -123,3 +134,22 @@ class RiskManager:
             stop_price=stop_price,
             target_price=target_price,
         )
+
+
+def trim_quantity(
+    qty: float,
+    price: float,
+    total_value: float,
+    target_weight_pct: float,
+) -> int:
+    """Whole shares to sell so the position falls to ``target_weight_pct``.
+
+    Selling shrinks the total too, but the proceeds stay in the account as
+    cash, so the total is treated as unchanged.
+    """
+    if price <= 0 or total_value <= 0 or qty <= 0:
+        return 0
+    excess_value = qty * price - total_value * target_weight_pct / 100
+    if excess_value <= 0:
+        return 0
+    return int(min(qty, math.ceil(excess_value / price)))
