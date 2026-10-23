@@ -14,6 +14,7 @@ from indicators import atr as compute_atr
 from risk_manager import RiskManager, trim_quantity
 from signal_engine import DATA_FAILURE_TRENDS, evaluate_signal
 import lookthrough
+import scorecard
 
 # Fully vetted Exchange Tickers mapping
 TICKER_MAP = {
@@ -136,7 +137,10 @@ def compute_market_features(data: pd.DataFrame, config: RiskConfig = RISK_CONFIG
     else:
         res["sma_10_month"] = res["dma_200"]
 
-    res.update(month_end_trend(clean_close, res["is_month_end"], config.trend_exit_months))
+    # Completed months only: every scheduled run is before the 15:30 IST close, so
+    # "today" on a month-end is an intraday price. The new state shows on the first
+    # run of the next month, i.e. acted on at the next session (as backtested).
+    res.update(month_end_trend(clean_close, False, config.trend_exit_months))
 
     if len(clean_close) >= 126:
         r6 = float(clean_close.iloc[-1] / clean_close.iloc[-126] - 1.0)
@@ -1112,7 +1116,7 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
 
     held = set(df["Stock Symbol"])
     watch = [s for s in thesis_dict if s not in held and s not in RISK_CONFIG.trend_exit_exempt]
-    reentries = []
+    reentries, reentry_rows = [], []
     for sym in watch:
         try:
             hist = yf.Ticker(TICKER_MAP.get(sym, f"{sym}.NS")).history(period="2y")["Close"].dropna()
@@ -1122,12 +1126,28 @@ def run_weekly_analysis(notify_fn=send_telegram_notification):
             hit = None
         if hit:
             reentries.append(sym)
+            reentry_rows.append({"Analysis_Date": date_str, "Stock_Symbol": sym, "Price_At_Signal": round(hit["close"], 2),
+                                 "run_timestamp_ist": run_timestamp_ist, "Decision": "RE-ENTRY",
+                                 "Rationale": f"month-end close back above {RISK_CONFIG.trend_exit_months}-month average"})
             urgent_lines.append(
                 f"🟢 <b>RE-ENTRY</b> | <b>{html.escape(sym)}</b> | month-end close ₹{hit['close']:.2f} back above "
                 f"{RISK_CONFIG.trend_exit_months}-month average ₹{hit['sma']:.2f} — consider buying back"
             )
     trend_md += (f"* Sold stocks watched for re-entry: {', '.join(watch) if watch else 'none'}"
                  + (f"; re-entry signalled: {', '.join(reentries)}" if reentries else "") + "\n")
+    if reentry_rows:
+        cols = pd.read_csv(tracking_file, nrows=0).columns
+        pd.DataFrame(reentry_rows).reindex(columns=cols).to_csv(tracking_file, mode="a", index=False, header=False)
+
+    # Monthly scorecard: once per calendar month (first run of the month).
+    now_month = pd.Timestamp(now_ist.replace(tzinfo=None))
+    if scorecard.due_this_month(now_month):
+        try:
+            card = scorecard.run_scorecard(tracking_file, TICKER_MAP, today=now_month)
+            if card:
+                urgent_lines.append(card)
+        except Exception as exc:
+            print(f"[warn] Scorecard failed: {type(exc).__name__}: {exc}")
     telegram_lines = urgent_lines + telegram_lines
 
     markdown_output = (
