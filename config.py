@@ -87,6 +87,10 @@ class RiskConfig:
     trend_exit_enabled: bool = os.getenv("TREND_EXIT_ENABLED", "true").strip().lower() in ("true", "1", "yes")
     trend_exit_months: int = _int("TREND_EXIT_MONTHS", 10)
     trend_exit_exempt: tuple[str, ...] = ("ICINIF", "HDF250", "MIR150", "NIPNIT", "KOTAKBKETF", "ICIGOL", "ICIPSE")
+    # Monthly scorecard: model-follow book vs hold-everything book from this date,
+    # using the quantities frozen in data/scorecard_baseline.csv.
+    scorecard_start: str = os.getenv("SCORECARD_START", "2026-10-19")
+    scorecard_cash_rate: float = _float("SCORECARD_CASH_RATE", 0.055)
     # Market-wide warning: Nifty 50 ETF vs its 200-day SMA with a +/-2% band.
     market_trend_ticker: str = "NIFTYBEES.NS"
     market_trend_sma_days: int = _int("MARKET_TREND_SMA_DAYS", 200)
