@@ -4,45 +4,45 @@
 
 * **First Recorded Trade**: 2021-04-16
 * **Valuation Date**: 2026-11-02
-* **Portfolio XIRR**: **-6.70%** (Current Traded Positions Value: ₹482,828)
-* **Benchmark XIRR**: **4.31%** (Simulated Benchmark Value: ₹623,010)
+* **Portfolio XIRR**: **-6.21%** (Current Traded Positions Value: ₹488,252)
+* **Benchmark XIRR**: **4.52%** (Simulated Benchmark Value: ₹626,087)
 * *Benchmark: Nifty 50 (^NSEI; Nifty 50 TRI is not available on Yahoo Finance)*
 
 #### Holding-Level XIRR (From Trade Cash Flows)
 
 | Symbol     |   Held Qty |   Traded Qty | Current Value   | XIRR    | History              |
 |:-----------|-----------:|-------------:|:----------------|:--------|:---------------------|
-| NIPNIT     |         76 |           76 | ₹2,780          | 36.14%  | Full                 |
-| IDECEL     |       1500 |         1500 | ₹18,135         | 32.62%  | Full                 |
-| FEDBAN     |         48 |           48 | ₹16,037         | 30.38%  | Full                 |
+| IDECEL     |       1500 |         1500 | ₹18,375         | 33.73%  | Full                 |
+| NIPNIT     |         76 |           76 | ₹2,741          | 31.34%  | Full                 |
+| FEDBAN     |         48 |           48 | ₹16,200         | 30.79%  | Full                 |
 | ENGIND     |         21 |           21 | ₹4,866          | 16.03%  | Full                 |
-| GUJPPL     |         20 |           20 | ₹3,235          | 15.89%  | Full                 |
-| SEQSCI     |         10 |           10 | ₹2,205          | 14.24%  | Full                 |
-| BHAELE     |         80 |           48 | ₹18,026         | 12.49%  | Partial (48/80 sh)   |
-| NHPC       |         55 |           55 | ₹4,351          | 11.30%  | Full                 |
-| GAIL       |         61 |           61 | ₹10,622         | 11.13%  | Full                 |
-| DRREDD     |          6 |            6 | ₹8,140          | 8.59%   | Full                 |
-| TATPOW     |          8 |            8 | ₹2,822          | 8.12%   | Full                 |
-| NTPC       |         12 |           12 | ₹3,912          | 6.04%   | Full                 |
-| TATGLO     |         30 |           30 | ₹30,816         | 5.37%   | Full                 |
-| JSWENE     |         54 |           54 | ₹27,378         | 0.20%   | Full                 |
-| PETLNG     |         14 |           14 | ₹4,182          | -2.56%  | Full                 |
-| HINPET     |         14 |           14 | ₹4,908          | -2.78%  | Full                 |
-| ONGC       |         39 |           39 | ₹8,924          | -4.56%  | Full                 |
+| GUJPPL     |         20 |           20 | ₹3,250          | 16.01%  | Full                 |
+| SEQSCI     |         10 |           10 | ₹2,203          | 14.22%  | Full                 |
+| GAIL       |         61 |           61 | ₹10,797         | 12.73%  | Full                 |
+| BHAELE     |         80 |           48 | ₹18,072         | 12.58%  | Partial (48/80 sh)   |
+| NHPC       |         55 |           55 | ₹4,333          | 11.14%  | Full                 |
+| TATPOW     |          8 |            8 | ₹2,847          | 8.44%   | Full                 |
+| DRREDD     |          6 |            6 | ₹8,052          | 7.90%   | Full                 |
+| NTPC       |         12 |           12 | ₹3,876          | 5.71%   | Full                 |
+| TATGLO     |         30 |           30 | ₹30,867         | 5.41%   | Full                 |
+| JSWENE     |         54 |           54 | ₹27,297         | 0.10%   | Full                 |
+| PETLNG     |         14 |           14 | ₹4,213          | -2.15%  | Full                 |
+| ONGC       |         39 |           39 | ₹9,158          | -2.51%  | Full                 |
+| HINPET     |         14 |           14 | ₹4,872          | -3.18%  | Full                 |
+| HDF250     |         24 |           24 | ₹4,110          | -7.52%  | Full                 |
 | GUJGA      |          7 |            7 | ₹2,808          | -7.75%  | Full                 |
-| HDF250     |         24 |           24 | ₹4,105          | -7.84%  | Full                 |
+| RELIND     |         76 |           74 | ₹96,200         | -8.24%  | Partial (74/76 sh)   |
+| ASHLEY     |        106 |           53 | ₹7,908          | -9.28%  | Partial (53/106 sh)  |
 | ICINIF     |         86 |           86 | ₹22,468         | -9.37%  | Full                 |
-| ASHLEY     |        106 |           53 | ₹7,850          | -9.52%  | Partial (53/106 sh)  |
-| RELIND     |         76 |           74 | ₹92,056         | -9.90%  | Partial (74/76 sh)   |
-| SJVLIM     |         67 |           67 | ₹3,840          | -13.32% | Full                 |
-| HDFBAN     |        130 |           75 | ₹52,050         | -14.45% | Partial (75/130 sh)  |
-| MIR150     |        194 |          194 | ₹4,225          | -16.20% | Full                 |
-| KOTAKBKETF |         30 |           30 | ₹1,711          | -17.16% | Full                 |
-| WIPRO      |        220 |          170 | ₹33,425         | -17.86% | Partial (170/220 sh) |
-| JIOFIN     |         53 |           28 | ₹5,933          | -18.70% | Partial (28/53 sh)   |
-| ICIGOL     |        250 |          250 | ₹29,233         | -22.39% | Full                 |
-| ICIPSE     |        193 |          193 | ₹34,265         | -40.35% | Full                 |
-| LIC        |         80 |           45 | ₹17,518         | -54.19% | Partial (45/80 sh)   |
+| SJVLIM     |         67 |           67 | ₹3,786          | -13.75% | Full                 |
+| HDFBAN     |        130 |           75 | ₹52,500         | -14.25% | Partial (75/130 sh)  |
+| MIR150     |        194 |          194 | ₹4,227          | -16.09% | Full                 |
+| KOTAKBKETF |         30 |           30 | ₹1,709          | -17.60% | Full                 |
+| WIPRO      |        220 |          170 | ₹33,388         | -17.91% | Partial (170/220 sh) |
+| JIOFIN     |         53 |           28 | ₹5,971          | -18.48% | Partial (28/53 sh)   |
+| ICIGOL     |        250 |          250 | ₹29,155         | -22.70% | Full                 |
+| ICIPSE     |        193 |          193 | ₹34,499         | -39.73% | Full                 |
+| LIC        |         80 |           45 | ₹17,505         | -54.22% | Partial (45/80 sh)   |
 
 #### Trade History Coverage Gaps
 
@@ -60,71 +60,71 @@
 ### Asset Health Assessment
 | Symbol     | Sector               | Weight   | Total Return   | Trailing Stop   | Decision    | Action                          | Reasoning                                                                                                                                                                                                                                                      | Thesis Status   |   Conviction |
 |:-----------|:---------------------|:---------|:---------------|:----------------|:------------|:--------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------|-------------:|
-| RELIND     | Oil & Gas            | 15.2%    | +7.36%         | N/A             | SELL        | Exit all 76 sh (~₹94,544)       | Trend exit: month-end close ₹1164.90 < 10-month average ₹1308.41. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                  | INTACT          |            5 |
-| HDFBAN     | Banking              | 14.5%    | -5.71%         | N/A             | SELL        | Exit all 130 sh (~₹90,220)      | Trend exit: month-end close ₹692.80 < 10-month average ₹765.53. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            5 |
-| WIPRO      | IT                   | 7.0%     | -16.83%        | N/A             | SELL        | Exit all 220 sh (~₹43,256)      | Thesis invalidated: Price ₹196.62 <= invalidation price ₹208.04.                                                                                                                                                                                               | INVALIDATED     |            4 |
-| ICIPSE     | Commodities          | 5.5%     | -29.34%        | N/A             | SELL        | Exit all 193 sh (~₹34,265)      | Thesis invalidated: Price ₹177.54 <= invalidation price ₹231.16.                                                                                                                                                                                               | INVALIDATED     |            3 |
-| LIC        | Insurance            | 5.0%     | -56.65%        | N/A             | SELL        | Exit all 80 sh (~₹31,144)       | Thesis invalidated: Price ₹389.30 <= invalidation price ₹790.25.                                                                                                                                                                                               | INVALIDATED     |            4 |
-| TATGLO     | Consumption          | 5.0%     | +28.30%        | N/A             | SELL        | Exit all 30 sh (~₹30,816)       | Trend exit: month-end close ₹1025.90 < 10-month average ₹1074.71. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                  | INTACT          |            3 |
-| BHAELE     | Defense              | 4.8%     | +137.95%       | ₹330.97         | SELL        | Exit all 80 sh (~₹30,044)       | Trend exit: month-end close ₹369.90 < 10-month average ₹410.09. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
-| ICIGOL     | Commodities          | 4.7%     | -15.72%        | N/A             | SELL        | Exit all 250 sh (~₹29,233)      | Thesis invalidated: Price ₹116.93 <= invalidation price ₹131.80.                                                                                                                                                                                               | INVALIDATED     |            2 |
-| JSWENE     | Power                | 4.4%     | -0.33%         | N/A             | SELL        | Exit all 54 sh (~₹27,378)       | Trend exit: month-end close ₹500.35 < 10-month average ₹521.99. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
+| RELIND     | Oil & Gas            | 15.8%    | +12.20%        | N/A             | SELL        | Exit all 76 sh (~₹98,800)       | Trend exit: month-end close ₹1164.90 < 10-month average ₹1308.41. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                  | INTACT          |            5 |
+| HDFBAN     | Banking              | 14.5%    | -4.89%         | N/A             | SELL        | Exit all 130 sh (~₹91,000)      | Trend exit: month-end close ₹692.80 < 10-month average ₹765.53. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            5 |
+| WIPRO      | IT                   | 6.9%     | -16.92%        | N/A             | SELL        | Exit all 220 sh (~₹43,208)      | Thesis invalidated: Price ₹196.40 <= invalidation price ₹208.04.                                                                                                                                                                                               | INVALIDATED     |            4 |
+| ICIPSE     | Commodities          | 5.5%     | -28.86%        | N/A             | SELL        | Exit all 193 sh (~₹34,499)      | Thesis invalidated: Price ₹178.75 <= invalidation price ₹231.16.                                                                                                                                                                                               | INVALIDATED     |            3 |
+| LIC        | Insurance            | 5.0%     | -56.68%        | N/A             | SELL        | Exit all 80 sh (~₹31,120)       | Thesis invalidated: Price ₹389.00 <= invalidation price ₹790.25.                                                                                                                                                                                               | INVALIDATED     |            4 |
+| TATGLO     | Consumption          | 4.9%     | +28.51%        | N/A             | SELL        | Exit all 30 sh (~₹30,867)       | Trend exit: month-end close ₹1025.90 < 10-month average ₹1074.71. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                  | INTACT          |            3 |
+| BHAELE     | Defense              | 4.8%     | +138.55%       | ₹330.97         | SELL        | Exit all 80 sh (~₹30,120)       | Trend exit: month-end close ₹369.90 < 10-month average ₹410.09. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
+| ICIGOL     | Commodities          | 4.7%     | -15.94%        | N/A             | SELL        | Exit all 250 sh (~₹29,155)      | Thesis invalidated: Price ₹116.62 <= invalidation price ₹131.80.                                                                                                                                                                                               | INVALIDATED     |            2 |
+| JSWENE     | Power                | 4.4%     | -0.63%         | N/A             | SELL        | Exit all 54 sh (~₹27,297)       | Trend exit: month-end close ₹500.35 < 10-month average ₹521.99. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
 | ICINIF     | Broad Market         | 3.6%     | -3.62%         | N/A             | REVIEW      | Review                          | 200-DMA breakdown hysteresis review: price > 3% below 200-DMA for 38 sessions                                                                                                                                                                                  | INTACT          |            4 |
-| LGELEC     | Consumer Electronics | 3.5%     | +46.23%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹1667.00 moving sideways between 50 DMA (₹1686.31) and 200 DMA (₹1568.29); conviction (4/5) thesis INTACT above invalidation (₹1003.20).                                                                                             | INTACT          |            4 |
-| IDECEL     | Telecom              | 2.9%     | +63.60%        | ₹11.05          | SELL        | Exit all 1500 sh (~₹18,135)     | Trend exit: month-end close ₹11.83 < 10-month average ₹12.11. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                      | INTACT          |            2 |
-| FEDBAN     | Banking              | 2.6%     | +122.90%       | ₹259.30         | HOLD        | Hold                            | Consolidation hold: Price ₹334.10 moving sideways between 50 DMA (₹338.29) and 200 DMA (₹310.37); conviction (4/5) thesis INTACT above invalidation (₹131.90).                                                                                                 | INTACT          |            4 |
-| ASHLEY     | Auto                 | 2.5%     | +49.65%        | N/A             | SELL        | Exit all 106 sh (~₹15,701)      | Trend exit: month-end close ₹144.82 < 10-month average ₹166.32. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
-| TATCAP     | Financial Services   | 2.4%     | -0.54%         | N/A             | SELL        | Exit all 46 sh (~₹14,916)       | Trend exit: month-end close ₹319.90 < 10-month average ₹336.35. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
-| NTPGRE     | Power                | 1.9%     | -22.35%        | N/A             | SELL        | Exit all 138 sh (~₹11,573)      | Thesis invalidated: Price ₹83.86 <= invalidation price ₹99.36.                                                                                                                                                                                                 | INVALIDATED     |            3 |
-| JIOFIN     | Financial Services   | 1.8%     | -8.73%         | N/A             | SELL        | Exit all 53 sh (~₹11,231)       | Thesis invalidated: Price ₹211.90 <= invalidation price ₹213.61.                                                                                                                                                                                               | INVALIDATED     |            3 |
-| GAIL       | Oil & Gas            | 1.7%     | +11.94%        | N/A             | HOLD        | Hold                            | Position hold: Technical trend BULLISH, total return +11.94%, position weight 1.7%; conviction (4/5) thesis INTACT above invalidation (₹136.88).                                                                                                               | INTACT          |            4 |
-| ONGC       | Oil & Gas            | 1.4%     | -6.04%         | N/A             | SELL        | Exit all 39 sh (~₹8,924)        | Trend exit: month-end close ₹225.39 < 10-month average ₹254.36. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
-| DRREDD     | Pharma               | 1.3%     | +14.24%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹1356.70 moving sideways between 50 DMA (₹1209.71) and 200 DMA (₹1241.21); conviction (5/5) thesis INTACT above invalidation (₹1009.47).                                                                                             | INTACT          |            5 |
-| HINPET     | Oil & Gas            | 0.8%     | -5.77%         | N/A             | SELL        | Exit all 14 sh (~₹4,908)        | Trend exit: month-end close ₹340.55 < 10-month average ₹367.55. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
+| LGELEC     | Consumer Electronics | 3.5%     | +47.54%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹1682.00 moving sideways between 50 DMA (₹1686.61) and 200 DMA (₹1568.36); conviction (4/5) thesis INTACT above invalidation (₹1003.20).                                                                                             | INTACT          |            4 |
+| IDECEL     | Telecom              | 2.9%     | +65.76%        | ₹11.05          | SELL        | Exit all 1500 sh (~₹18,375)     | Trend exit: month-end close ₹11.83 < 10-month average ₹12.11. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                      | INTACT          |            2 |
+| FEDBAN     | Banking              | 2.6%     | +125.17%       | ₹259.30         | HOLD        | Hold                            | Consolidation hold: Price ₹337.50 moving sideways between 50 DMA (₹338.36) and 200 DMA (₹310.38); conviction (4/5) thesis INTACT above invalidation (₹131.90).                                                                                                 | INTACT          |            4 |
+| ASHLEY     | Auto                 | 2.5%     | +50.74%        | ₹148.26         | SELL        | Exit all 106 sh (~₹15,815)      | Trend exit: month-end close ₹144.82 < 10-month average ₹166.32. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
+| TATCAP     | Financial Services   | 2.4%     | -0.21%         | N/A             | SELL        | Exit all 46 sh (~₹14,964)       | Trend exit: month-end close ₹319.90 < 10-month average ₹336.35. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
+| NTPGRE     | Power                | 1.8%     | -22.76%        | N/A             | SELL        | Exit all 138 sh (~₹11,512)      | Thesis invalidated: Price ₹83.42 <= invalidation price ₹99.36.                                                                                                                                                                                                 | INVALIDATED     |            3 |
+| JIOFIN     | Financial Services   | 1.8%     | -8.15%         | N/A             | SELL        | Exit all 53 sh (~₹11,302)       | Thesis invalidated: Price ₹213.25 <= invalidation price ₹213.61.                                                                                                                                                                                               | INVALIDATED     |            3 |
+| GAIL       | Oil & Gas            | 1.7%     | +13.79%        | N/A             | HOLD        | Hold                            | Position hold: Technical trend BULLISH, total return +13.79%, position weight 1.7%; conviction (4/5) thesis INTACT above invalidation (₹136.88).                                                                                                               | INTACT          |            4 |
+| ONGC       | Oil & Gas            | 1.5%     | -3.57%         | N/A             | SELL        | Exit all 39 sh (~₹9,158)        | Trend exit: month-end close ₹225.39 < 10-month average ₹254.36. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
+| DRREDD     | Pharma               | 1.3%     | +13.00%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹1342.00 moving sideways between 50 DMA (₹1209.41) and 200 DMA (₹1241.13); conviction (5/5) thesis INTACT above invalidation (₹1009.47).                                                                                             | INTACT          |            5 |
+| HINPET     | Oil & Gas            | 0.8%     | -6.45%         | N/A             | SELL        | Exit all 14 sh (~₹4,872)        | Trend exit: month-end close ₹340.55 < 10-month average ₹367.55. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
 | ENGIND     | Infrastructure       | 0.8%     | +29.80%        | N/A             | VERIFY DATA | Verify price data before acting | Unreliable price data: As-of (2026-09-26) price ₹315.65 differs from broker price ₹231.70 by +36.2% (limit ±25%); check ticker or corporate action.; evaluation incomplete.                                                                                    | INTACT          |            3 |
-| NHPC       | Power                | 0.7%     | +35.42%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹79.11 moving sideways between 50 DMA (₹74.75) and 200 DMA (₹76.84); conviction (3/5) thesis INTACT above invalidation (₹53.75).                                                                                                     | INTACT          |            3 |
-| MIR150     | Broad Market         | 0.7%     | -6.08%         | N/A             | REVIEW      | Review                          | 200-DMA breakdown hysteresis review: price > 3% below 200-DMA for 9 sessions                                                                                                                                                                                   | INTACT          |            4 |
-| PETLNG     | Oil & Gas            | 0.7%     | -5.35%         | N/A             | HOLD        | Hold                            | Position hold: Technical trend BULLISH, total return -5.35%, position weight 0.7%; conviction (4/5) thesis INTACT above invalidation (₹277.73).                                                                                                                | INTACT          |            4 |
-| HDF250     | Broad Market         | 0.7%     | -2.86%         | N/A             | REVIEW      | Review                          | 200-DMA breakdown hysteresis review: price > 3% below 200-DMA for 0 sessions                                                                                                                                                                                   | INTACT          |            4 |
-| NTPC       | Power                | 0.6%     | +17.59%        | N/A             | SELL        | Exit all 12 sh (~₹3,912)        | Trend exit: month-end close ₹316.25 < 10-month average ₹353.10. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            5 |
-| SJVLIM     | Power                | 0.6%     | -34.57%        | N/A             | SELL        | Exit all 67 sh (~₹3,840)        | Thesis invalidated: Price ₹57.31 <= invalidation price ₹80.58.                                                                                                                                                                                                 | INVALIDATED     |            3 |
-| GUJPPL     | Infrastructure       | 0.5%     | +89.47%        | ₹135.92         | HOLD        | Hold                            | Consolidation hold: Price ₹161.77 moving sideways between 50 DMA (₹163.55) and 200 DMA (₹156.54); conviction (3/5) thesis INTACT above invalidation (₹78.55).                                                                                                  | INTACT          |            3 |
-| TATPOW     | Power                | 0.5%     | +24.43%        | N/A             | SELL        | Exit all 8 sh (~₹2,822)         | Trend exit: month-end close ₹345.05 < 10-month average ₹379.29. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
-| GUJGA      | Oil & Gas            | 0.5%     | -14.32%        | N/A             | VERIFY DATA | Verify price data before acting | invalidation breached on broker price (₹401.15 <= ₹430.75); live price unreliable — verify before acting. Unreliable price data: As-of (2026-09-26) price ₹236.02 differs from broker price ₹401.15 by -41.2% (limit ±25%); check ticker or corporate action.. | INVALIDATED     |            3 |
-| NIPNIT     | IT                   | 0.4%     | +13.04%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹36.58 moving sideways between 50 DMA (₹33.31) and 200 DMA (₹33.91); conviction (4/5) thesis INTACT above invalidation (₹28.48).                                                                                                     | INTACT          |            4 |
-| SEQSCI     | Pharma               | 0.4%     | +78.63%        | ₹208.60         | SELL        | Exit all 10 sh (~₹2,205)        | Trend exit: month-end close ₹218.39 < 10-month average ₹231.17. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            2 |
-| KOTAKBKETF | Banking              | 0.3%     | -4.26%         | N/A             | REVIEW      | Review                          | 200-DMA breakdown hysteresis review: price > 3% below 200-DMA for 0 sessions                                                                                                                                                                                   | INTACT          |            4 |
+| NHPC       | Power                | 0.7%     | +34.85%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹78.78 moving sideways between 50 DMA (₹74.75) and 200 DMA (₹76.84); conviction (3/5) thesis INTACT above invalidation (₹53.75).                                                                                                     | INTACT          |            3 |
+| MIR150     | Broad Market         | 0.7%     | -6.04%         | N/A             | REVIEW      | Review                          | 200-DMA breakdown hysteresis review: price > 3% below 200-DMA for 9 sessions                                                                                                                                                                                   | INTACT          |            4 |
+| PETLNG     | Oil & Gas            | 0.7%     | -4.64%         | N/A             | HOLD        | Hold                            | Position hold: Technical trend BULLISH, total return -4.64%, position weight 0.7%; conviction (4/5) thesis INTACT above invalidation (₹277.73).                                                                                                                | INTACT          |            4 |
+| HDF250     | Broad Market         | 0.7%     | -2.74%         | N/A             | REVIEW      | Review                          | 200-DMA breakdown hysteresis review: price > 3% below 200-DMA for 0 sessions                                                                                                                                                                                   | INTACT          |            4 |
+| NTPC       | Power                | 0.6%     | +16.51%        | N/A             | SELL        | Exit all 12 sh (~₹3,876)        | Trend exit: month-end close ₹316.25 < 10-month average ₹353.10. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            5 |
+| SJVLIM     | Power                | 0.6%     | -35.49%        | N/A             | SELL        | Exit all 67 sh (~₹3,786)        | Thesis invalidated: Price ₹56.50 <= invalidation price ₹80.58.                                                                                                                                                                                                 | INVALIDATED     |            3 |
+| GUJPPL     | Infrastructure       | 0.5%     | +90.30%        | ₹135.92         | HOLD        | Hold                            | Consolidation hold: Price ₹162.48 moving sideways between 50 DMA (₹163.56) and 200 DMA (₹156.55); conviction (3/5) thesis INTACT above invalidation (₹78.55).                                                                                                  | INTACT          |            3 |
+| TATPOW     | Power                | 0.5%     | +25.52%        | N/A             | SELL        | Exit all 8 sh (~₹2,847)         | Trend exit: month-end close ₹345.05 < 10-month average ₹379.29. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
+| GUJGA      | Oil & Gas            | 0.4%     | -14.32%        | N/A             | VERIFY DATA | Verify price data before acting | invalidation breached on broker price (₹401.15 <= ₹430.75); live price unreliable — verify before acting. Unreliable price data: As-of (2026-09-26) price ₹236.02 differs from broker price ₹401.15 by -41.2% (limit ±25%); check ticker or corporate action.. | INVALIDATED     |            3 |
+| NIPNIT     | IT                   | 0.4%     | +11.43%        | N/A             | HOLD        | Hold                            | Consolidation hold: Price ₹36.06 moving sideways between 50 DMA (₹33.30) and 200 DMA (₹33.91); conviction (4/5) thesis INTACT above invalidation (₹28.48).                                                                                                     | INTACT          |            4 |
+| SEQSCI     | Pharma               | 0.4%     | +78.46%        | ₹208.60         | SELL        | Exit all 10 sh (~₹2,203)        | Trend exit: month-end close ₹218.39 < 10-month average ₹231.17. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            2 |
+| KOTAKBKETF | Banking              | 0.3%     | -4.38%         | N/A             | REVIEW      | Review                          | 200-DMA breakdown hysteresis review: price > 3% below 200-DMA for 0 sessions                                                                                                                                                                                   | INTACT          |            4 |
 
 ### Market Trend and Re-entry Watchlist
-* 🔴 Market trend RISK-OFF: Nifty ETF ₹265.71 vs 200-day average ₹272.91 (±2% band) — warning only: stop new buying; per-stock trend exits do the selling
+* 🔴 Market trend RISK-OFF: Nifty ETF ₹265.90 vs 200-day average ₹272.91 (±2% band) — warning only: stop new buying; per-stock trend exits do the selling
 * Sold stocks watched for re-entry: none
 
 ### Sector Concentration Metrics
-* **Oil & Gas**: 20.3%
+* **Oil & Gas**: 20.9%
 * **Banking**: 17.4%
 * **Commodities**: 10.2%
-* **Power**: 8.7%
-* **IT**: 7.4%
+* **Power**: 8.6%
+* **IT**: 7.3%
 * **Insurance**: 5.0%
-* **Consumption**: 5.0%
-* **Broad Market**: 5.0%
+* **Consumption**: 4.9%
+* **Broad Market**: 4.9%
 * **Defense**: 4.8%
 * **Financial Services**: 4.2%
 * **Consumer Electronics**: 3.5%
 * **Telecom**: 2.9%
 * **Auto**: 2.5%
-* **Pharma**: 1.7%
+* **Pharma**: 1.6%
 * **Infrastructure**: 1.3%
-* **Financials (combined)**: 26.6%
+* **Financials (combined)**: 26.5%
 ### Risk Factor Groups Concentration
 
 Portfolio exposure across macro risk buckets (Risk Cap: **25.0%**):
 
 | Risk Group        | Exposure   | Cap   | Status    | Top Constituents                                                                        |
 |:------------------|:-----------|:------|:----------|:----------------------------------------------------------------------------------------|
-| Energy & Power    | 29.0%      | 25.0% | ⚠️ BREACH | TATPOW (0.5%), NTPC (0.6%), NHPC (0.7%), SJVLIM (0.6%), NTPGRE (1.9%), +7 more          |
-| Financials        | 26.6%      | 25.0% | ⚠️ BREACH | FEDBAN (2.6%), HDFBAN (14.5%), KOTAKBKETF (0.3%), JIOFIN (1.8%), TATCAP (2.4%), +1 more |
-| State-owned (PSU) | 19.5%      | 25.0% | OK        | ONGC (1.4%), GAIL (1.7%), HINPET (0.8%), PETLNG (0.7%), NTPC (0.6%), +7 more            |
+| Energy & Power    | 29.4%      | 25.0% | ⚠️ BREACH | TATPOW (0.5%), NTPC (0.6%), NHPC (0.7%), SJVLIM (0.6%), NTPGRE (1.8%), +7 more          |
+| Financials        | 26.5%      | 25.0% | ⚠️ BREACH | FEDBAN (2.6%), HDFBAN (14.5%), KOTAKBKETF (0.3%), JIOFIN (1.8%), TATCAP (2.4%), +1 more |
+| State-owned (PSU) | 19.4%      | 25.0% | OK        | ONGC (1.5%), GAIL (1.7%), HINPET (0.8%), PETLNG (0.7%), NTPC (0.6%), +7 more            |
 | Precious metals   | 10.2%      | 25.0% | OK        | ICIGOL (4.7%), ICIPSE (5.5%)                                                            |
 
 ### ETF Look-Through Effective Exposure
@@ -133,72 +133,72 @@ Combined direct stock holdings plus indirect exposure via Nifty 50 (`ICINIF`) an
 
 | Symbol   | Direct Weight   | Effective Weight   | Indirect Source                          |
 |:---------|:----------------|:-------------------|:-----------------------------------------|
-| RELIND   | 15.2%           | 15.55%             | +0.31% via ICINIF                        |
-| HDFBAN   | 14.5%           | 15.04%             | +0.42% via ICINIF, +0.08% via KOTAKBKETF |
-| WIPRO    | 7.0%            | 6.97%              | Direct only                              |
-| ICIPSE   | 5.5%            | 5.52%              | Direct only                              |
-| LIC      | 5.0%            | 5.02%              | Direct only                              |
-| TATGLO   | 5.0%            | 4.97%              | Direct only                              |
-| BHAELE   | 4.8%            | 4.84%              | Direct only                              |
-| ICIGOL   | 4.7%            | 4.71%              | Direct only                              |
-| JSWENE   | 4.4%            | 4.41%              | Direct only                              |
-| ICINIF   | 3.6%            | 3.62%              | Direct only                              |
+| RELIND   | 15.8%           | 16.08%             | +0.30% via ICINIF                        |
+| HDFBAN   | 14.5%           | 15.02%             | +0.41% via ICINIF, +0.08% via KOTAKBKETF |
+| WIPRO    | 6.9%            | 6.90%              | Direct only                              |
+| ICIPSE   | 5.5%            | 5.51%              | Direct only                              |
+| LIC      | 5.0%            | 4.97%              | Direct only                              |
+| TATGLO   | 4.9%            | 4.93%              | Direct only                              |
+| BHAELE   | 4.8%            | 4.81%              | Direct only                              |
+| ICIGOL   | 4.7%            | 4.65%              | Direct only                              |
+| JSWENE   | 4.4%            | 4.36%              | Direct only                              |
+| ICINIF   | 3.6%            | 3.59%              | Direct only                              |
 | LGELEC   | 3.5%            | 3.49%              | Direct only                              |
-| IDECEL   | 2.9%            | 2.92%              | Direct only                              |
+| IDECEL   | 2.9%            | 2.93%              | Direct only                              |
 | FEDBAN   | 2.6%            | 2.59%              | +0.01% via KOTAKBKETF                    |
-| ASHLEY   | 2.5%            | 2.53%              | Direct only                              |
-| TATCAP   | 2.4%            | 2.40%              | Direct only                              |
+| ASHLEY   | 2.5%            | 2.52%              | Direct only                              |
+| TATCAP   | 2.4%            | 2.39%              | Direct only                              |
 
 *Showing top 15 of 47 holdings by effective weight.*
 
 ### Core / Satellite Portfolio Structure
 
-* **Core Allocation (Index ETFs)**: **5.0%** (Target: 50.0%, Gap: +45.0%) across 3 index ETFs
-* **Satellite Allocation (Stocks & Thematic ETFs)**: **95.0%** across **31 holdings** (Target: ≤15, Excess: +16)
+* **Core Allocation (Index ETFs)**: **4.9%** (Target: 50.0%, Gap: +45.1%) across 3 index ETFs
+* **Satellite Allocation (Stocks & Thematic ETFs)**: **95.1%** across **31 holdings** (Target: ≤15, Excess: +16)
 
 #### Core Holdings (Passive Index Foundation)
 
 | Symbol   | Category         | Weight   | Value   |   Conviction |
 |:---------|:-----------------|:---------|:--------|-------------:|
 | ICINIF   | Index ETF (Core) | 3.6%     | ₹22,468 |            4 |
-| MIR150   | Index ETF (Core) | 0.7%     | ₹4,225  |            4 |
-| HDF250   | Index ETF (Core) | 0.7%     | ₹4,105  |            4 |
+| MIR150   | Index ETF (Core) | 0.7%     | ₹4,227  |            4 |
+| HDF250   | Index ETF (Core) | 0.7%     | ₹4,110  |            4 |
 
 #### Satellite Holdings (Ranked by Conviction & Weight)
 
 | Symbol     | Sector               | Type          |   Conviction | Weight   | Value   | Status         |
 |:-----------|:---------------------|:--------------|-------------:|:---------|:--------|:---------------|
-| RELIND     | Oil & Gas            | Single Stock  |            5 | 15.2%    | ₹94,544 | Active         |
-| HDFBAN     | Banking              | Single Stock  |            5 | 14.5%    | ₹90,220 | Active         |
-| DRREDD     | Pharma               | Single Stock  |            5 | 1.3%     | ₹8,140  | Active         |
-| NTPC       | Power                | Single Stock  |            5 | 0.6%     | ₹3,912  | Active         |
-| WIPRO      | IT                   | Single Stock  |            4 | 7.0%     | ₹43,256 | Active         |
-| LIC        | Insurance            | Single Stock  |            4 | 5.0%     | ₹31,144 | Active         |
-| LGELEC     | Consumer Electronics | Single Stock  |            4 | 3.5%     | ₹21,671 | Active         |
-| FEDBAN     | Banking              | Single Stock  |            4 | 2.6%     | ₹16,037 | Active         |
-| ASHLEY     | Auto                 | Single Stock  |            4 | 2.5%     | ₹15,701 | Active         |
-| TATCAP     | Financial Services   | Single Stock  |            4 | 2.4%     | ₹14,916 | Active         |
-| GAIL       | Oil & Gas            | Single Stock  |            4 | 1.7%     | ₹10,622 | Active         |
-| ONGC       | Oil & Gas            | Single Stock  |            4 | 1.4%     | ₹8,924  | Active         |
-| PETLNG     | Oil & Gas            | Single Stock  |            4 | 0.7%     | ₹4,182  | ⚠️ Consolidate |
-| TATPOW     | Power                | Single Stock  |            4 | 0.5%     | ₹2,822  | ⚠️ Consolidate |
-| NIPNIT     | IT                   | Thematic ETF  |            4 | 0.4%     | ₹2,780  | ⚠️ Consolidate |
-| KOTAKBKETF | Banking              | Thematic ETF  |            4 | 0.3%     | ₹1,711  | ⚠️ Consolidate |
-| ICIPSE     | Commodities          | Commodity ETF |            3 | 5.5%     | ₹34,265 | ⚠️ Consolidate |
-| TATGLO     | Consumption          | Single Stock  |            3 | 5.0%     | ₹30,816 | ⚠️ Consolidate |
-| BHAELE     | Defense              | Single Stock  |            3 | 4.8%     | ₹30,044 | ⚠️ Consolidate |
-| JSWENE     | Power                | Single Stock  |            3 | 4.4%     | ₹27,378 | ⚠️ Consolidate |
-| NTPGRE     | Power                | Single Stock  |            3 | 1.9%     | ₹11,573 | ⚠️ Consolidate |
-| JIOFIN     | Financial Services   | Single Stock  |            3 | 1.8%     | ₹11,231 | ⚠️ Consolidate |
-| HINPET     | Oil & Gas            | Single Stock  |            3 | 0.8%     | ₹4,908  | ⚠️ Consolidate |
+| RELIND     | Oil & Gas            | Single Stock  |            5 | 15.8%    | ₹98,800 | Active         |
+| HDFBAN     | Banking              | Single Stock  |            5 | 14.5%    | ₹91,000 | Active         |
+| DRREDD     | Pharma               | Single Stock  |            5 | 1.3%     | ₹8,052  | Active         |
+| NTPC       | Power                | Single Stock  |            5 | 0.6%     | ₹3,876  | Active         |
+| WIPRO      | IT                   | Single Stock  |            4 | 6.9%     | ₹43,208 | Active         |
+| LIC        | Insurance            | Single Stock  |            4 | 5.0%     | ₹31,120 | Active         |
+| LGELEC     | Consumer Electronics | Single Stock  |            4 | 3.5%     | ₹21,866 | Active         |
+| FEDBAN     | Banking              | Single Stock  |            4 | 2.6%     | ₹16,200 | Active         |
+| ASHLEY     | Auto                 | Single Stock  |            4 | 2.5%     | ₹15,815 | Active         |
+| TATCAP     | Financial Services   | Single Stock  |            4 | 2.4%     | ₹14,964 | Active         |
+| GAIL       | Oil & Gas            | Single Stock  |            4 | 1.7%     | ₹10,797 | Active         |
+| ONGC       | Oil & Gas            | Single Stock  |            4 | 1.5%     | ₹9,158  | Active         |
+| PETLNG     | Oil & Gas            | Single Stock  |            4 | 0.7%     | ₹4,213  | ⚠️ Consolidate |
+| TATPOW     | Power                | Single Stock  |            4 | 0.5%     | ₹2,847  | ⚠️ Consolidate |
+| NIPNIT     | IT                   | Thematic ETF  |            4 | 0.4%     | ₹2,741  | ⚠️ Consolidate |
+| KOTAKBKETF | Banking              | Thematic ETF  |            4 | 0.3%     | ₹1,709  | ⚠️ Consolidate |
+| ICIPSE     | Commodities          | Commodity ETF |            3 | 5.5%     | ₹34,499 | ⚠️ Consolidate |
+| TATGLO     | Consumption          | Single Stock  |            3 | 4.9%     | ₹30,867 | ⚠️ Consolidate |
+| BHAELE     | Defense              | Single Stock  |            3 | 4.8%     | ₹30,120 | ⚠️ Consolidate |
+| JSWENE     | Power                | Single Stock  |            3 | 4.4%     | ₹27,297 | ⚠️ Consolidate |
+| NTPGRE     | Power                | Single Stock  |            3 | 1.8%     | ₹11,512 | ⚠️ Consolidate |
+| JIOFIN     | Financial Services   | Single Stock  |            3 | 1.8%     | ₹11,302 | ⚠️ Consolidate |
+| HINPET     | Oil & Gas            | Single Stock  |            3 | 0.8%     | ₹4,872  | ⚠️ Consolidate |
 | ENGIND     | Infrastructure       | Single Stock  |            3 | 0.8%     | ₹4,866  | ⚠️ Consolidate |
-| NHPC       | Power                | Single Stock  |            3 | 0.7%     | ₹4,351  | ⚠️ Consolidate |
-| SJVLIM     | Power                | Single Stock  |            3 | 0.6%     | ₹3,840  | ⚠️ Consolidate |
-| GUJPPL     | Infrastructure       | Single Stock  |            3 | 0.5%     | ₹3,235  | ⚠️ Consolidate |
-| GUJGA      | Oil & Gas            | Single Stock  |            3 | 0.5%     | ₹2,808  | ⚠️ Consolidate |
-| ICIGOL     | Commodities          | Commodity ETF |            2 | 4.7%     | ₹29,233 | ⚠️ Consolidate |
-| IDECEL     | Telecom              | Single Stock  |            2 | 2.9%     | ₹18,135 | ⚠️ Consolidate |
-| SEQSCI     | Pharma               | Single Stock  |            2 | 0.4%     | ₹2,205  | ⚠️ Consolidate |
+| NHPC       | Power                | Single Stock  |            3 | 0.7%     | ₹4,333  | ⚠️ Consolidate |
+| SJVLIM     | Power                | Single Stock  |            3 | 0.6%     | ₹3,786  | ⚠️ Consolidate |
+| GUJPPL     | Infrastructure       | Single Stock  |            3 | 0.5%     | ₹3,250  | ⚠️ Consolidate |
+| GUJGA      | Oil & Gas            | Single Stock  |            3 | 0.4%     | ₹2,808  | ⚠️ Consolidate |
+| ICIGOL     | Commodities          | Commodity ETF |            2 | 4.7%     | ₹29,155 | ⚠️ Consolidate |
+| IDECEL     | Telecom              | Single Stock  |            2 | 2.9%     | ₹18,375 | ⚠️ Consolidate |
+| SEQSCI     | Pharma               | Single Stock  |            2 | 0.4%     | ₹2,203  | ⚠️ Consolidate |
 
 
 ### Portfolio Consolidation
@@ -206,19 +206,19 @@ Portfolio holds 34 positions versus target maximum of 15 (`config.max_open_posit
 
 | Symbol     | Sector         | Weight   |   Conviction | Shares to Exit            |
 |:-----------|:---------------|:---------|-------------:|:--------------------------|
-| KOTAKBKETF | Banking        | 0.3%     |            4 | Exit all 30 sh (~₹1,711)  |
-| SEQSCI     | Pharma         | 0.4%     |            2 | Exit all 10 sh (~₹2,205)  |
-| NIPNIT     | IT             | 0.4%     |            4 | Exit all 76 sh (~₹2,780)  |
-| GUJGA      | Oil & Gas      | 0.5%     |            3 | Exit all 7 sh (~₹2,808)   |
-| TATPOW     | Power          | 0.5%     |            4 | Exit all 8 sh (~₹2,822)   |
-| GUJPPL     | Infrastructure | 0.5%     |            3 | Exit all 20 sh (~₹3,235)  |
-| SJVLIM     | Power          | 0.6%     |            3 | Exit all 67 sh (~₹3,840)  |
-| HDF250     | Broad Market   | 0.7%     |            4 | Exit all 24 sh (~₹4,105)  |
-| PETLNG     | Oil & Gas      | 0.7%     |            4 | Exit all 14 sh (~₹4,182)  |
-| MIR150     | Broad Market   | 0.7%     |            4 | Exit all 194 sh (~₹4,225) |
-| NHPC       | Power          | 0.7%     |            3 | Exit all 55 sh (~₹4,351)  |
+| KOTAKBKETF | Banking        | 0.3%     |            4 | Exit all 30 sh (~₹1,709)  |
+| SEQSCI     | Pharma         | 0.4%     |            2 | Exit all 10 sh (~₹2,203)  |
+| NIPNIT     | IT             | 0.4%     |            4 | Exit all 76 sh (~₹2,741)  |
+| GUJGA      | Oil & Gas      | 0.4%     |            3 | Exit all 7 sh (~₹2,808)   |
+| TATPOW     | Power          | 0.5%     |            4 | Exit all 8 sh (~₹2,847)   |
+| GUJPPL     | Infrastructure | 0.5%     |            3 | Exit all 20 sh (~₹3,250)  |
+| SJVLIM     | Power          | 0.6%     |            3 | Exit all 67 sh (~₹3,786)  |
+| HDF250     | Broad Market   | 0.7%     |            4 | Exit all 24 sh (~₹4,110)  |
+| PETLNG     | Oil & Gas      | 0.7%     |            4 | Exit all 14 sh (~₹4,213)  |
+| MIR150     | Broad Market   | 0.7%     |            4 | Exit all 194 sh (~₹4,227) |
+| NHPC       | Power          | 0.7%     |            3 | Exit all 55 sh (~₹4,333)  |
 | ENGIND     | Infrastructure | 0.8%     |            3 | Exit all 21 sh (~₹4,866)  |
-| HINPET     | Oil & Gas      | 0.8%     |            3 | Exit all 14 sh (~₹4,908)  |
+| HINPET     | Oil & Gas      | 0.8%     |            3 | Exit all 14 sh (~₹4,872)  |
 
 ### Thesis Governance & Review Status
 All portfolio theses are within their scheduled 3-month review window.
@@ -251,26 +251,26 @@ See `reports/thesis_proposals.md` for proposed invalidation floor increases on m
 | Realised STCG (FY 2026-27 so far)     | ₹0.00       | 20.0%           | Taxable on net short-term gains      |
 | Realised LTCG (FY 2026-27 so far)     | ₹0.00       | 12.5%           | Subject to ₹125,000 annual exemption |
 | Section 112A LTCG Exemption Remaining | ₹125,000.00 | 0.0%            | Limit: ₹125,000 per financial year   |
-| Total Unrealised LTCG (> 365 days)    | ₹41,165.26  | 12.5%           | Open long-term profit inventory      |
-| ⚡ Eligible Tax-Free LTCG to Harvest   | ₹41,165.26  | 0.0% (Zero Tax) | Can be booked tax-free before FY end |
-| Total Unrealised STCG (≤ 365 days)    | ₹1,775.42   | 20.0%           | Short-term unrealised gains          |
+| Total Unrealised LTCG (> 365 days)    | ₹42,473.13  | 12.5%           | Open long-term profit inventory      |
+| ⚡ Eligible Tax-Free LTCG to Harvest   | ₹42,473.13  | 0.0% (Zero Tax) | Can be booked tax-free before FY end |
+| Total Unrealised STCG (≤ 365 days)    | ₹1,866.53   | 20.0%           | Short-term unrealised gains          |
 
 #### Loss-Harvest Candidates (Offset Value)
 
-The following positions carry unrealised capital losses that can be booked to offset taxable STCG/LTCG (Total potential offset: **₹148,541**, Tax savings potential: **₹20,590**):
+The following positions carry unrealised capital losses that can be booked to offset taxable STCG/LTCG (Total potential offset: **₹144,516**, Tax savings potential: **₹19,953**):
 
 | Symbol   |   Shares | CMP      | Avg Cost   | Loss Offset Value   | Term      | Potential Tax Saved   |
 |:---------|---------:|:---------|:-----------|:--------------------|:----------|:----------------------|
-| HDFBAN   |       75 | ₹694.00  | ₹1267.91   | ₹43,043             | LTCG/STCG | ₹5,468                |
-| RELIND   |       62 | ₹1244.00 | ₹1707.69   | ₹28,749             | LTCG/STCG | ₹3,730                |
-| LIC      |       45 | ₹389.30  | ₹895.05    | ₹22,759             | LTCG/STCG | ₹3,035                |
-| WIPRO    |      170 | ₹196.62  | ₹304.31    | ₹18,308             | LTCG/STCG | ₹2,324                |
-| ICIPSE   |      193 | ₹177.54  | ₹250.36    | ₹14,053             | STCG      | ₹2,811                |
-| ICIGOL   |      250 | ₹116.93  | ₹138.24    | ₹5,327              | STCG      | ₹1,065                |
-| JSWENE   |       28 | ₹507.00  | ₹668.00    | ₹4,508              | LTCG      | ₹563                  |
-| JIOFIN   |       28 | ₹211.90  | ₹344.38    | ₹3,710              | LTCG      | ₹464                  |
-| ASHLEY   |       41 | ₹148.12  | ₹215.55    | ₹2,765              | LTCG      | ₹346                  |
-| SJVLIM   |       67 | ₹57.31   | ₹86.95     | ₹1,986              | LTCG      | ₹248                  |
+| HDFBAN   |       75 | ₹700.00  | ₹1267.91   | ₹42,593             | LTCG/STCG | ₹5,402                |
+| RELIND   |       47 | ₹1300.00 | ₹1842.64   | ₹25,504             | LTCG/STCG | ₹3,220                |
+| LIC      |       45 | ₹389.00  | ₹895.05    | ₹22,772             | LTCG/STCG | ₹3,036                |
+| WIPRO    |      170 | ₹196.40  | ₹304.31    | ₹18,345             | LTCG/STCG | ₹2,330                |
+| ICIPSE   |      193 | ₹178.75  | ₹250.36    | ₹13,820             | STCG      | ₹2,764                |
+| ICIGOL   |      250 | ₹116.62  | ₹138.24    | ₹5,405              | STCG      | ₹1,081                |
+| JSWENE   |       28 | ₹505.50  | ₹668.00    | ₹4,550              | LTCG      | ₹569                  |
+| JIOFIN   |       28 | ₹213.25  | ₹344.38    | ₹3,672              | LTCG      | ₹459                  |
+| ASHLEY   |       41 | ₹149.20  | ₹215.55    | ₹2,720              | LTCG      | ₹340                  |
+| SJVLIM   |       67 | ₹56.50   | ₹86.95     | ₹2,040              | LTCG      | ₹255                  |
 
 *Showing top 10 of 19 loss-harvest candidates.*
 
