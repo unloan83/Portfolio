@@ -910,7 +910,7 @@ def test_minimum_trade_suppression_and_consolidation_exception():
     )
     assert act_trim == "Hold (below minimum trade)"
 
-    # 2. Full exit (SELL) below ₹10,000 WITHOUT consolidation (e.g. conviction 5/5 or weight >= 1%) -> suppressed
+    # 2. Full exit (SELL) below ₹10,000 WITHOUT consolidation (e.g. conviction 5/5 or weight >= 1%) -> still allowed (exits are never blocked)
     eval_sell_high_conv = SimpleNamespace(
         decision="SELL",
         recommended_action="Exit",
@@ -933,7 +933,8 @@ def test_minimum_trade_suppression_and_consolidation_exception():
         config=config,
         is_consolidation=False,
     )
-    assert act_sell_suppressed == "Hold (below minimum trade)"
+    # Full exits are never suppressed by the minimum trade size.
+    assert act_sell_suppressed.startswith("Exit all")
 
     # 3. Full exit (SELL) below ₹10,000 WITH consolidation (weight < 1.0% and conviction < 5) -> allowed!
     eval_sell_consolidation = SimpleNamespace(

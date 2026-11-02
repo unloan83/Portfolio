@@ -507,9 +507,9 @@ def size_action(
         return f"Trim {shares} sh (~₹{trade_val:,.0f}) → {new_weight:.1f}% weight"
 
     if decision == "SELL":
+        # A full exit is never held back by the minimum trade size: the minimum
+        # exists to avoid tiny trims, not to keep a position the model says to sell.
         trade_val = qty * price
-        if trade_val < config.minimum_trade_value and not is_consolidation:
-            return "Hold (below minimum trade)"
         return f"Exit all {int(qty)} sh (~₹{trade_val:,.0f})"
 
     if decision in ("ACCUMULATE", "BUY"):
