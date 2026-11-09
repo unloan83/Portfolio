@@ -1,11 +1,11 @@
-# Orchestrated Multi-Agent Portfolio Audit - 2026-11-09
+# Orchestrated Multi-Agent Portfolio Audit - 2026-11-10
 
 ### Portfolio Performance vs Benchmark
 
 * **First Recorded Trade**: 2021-04-16
 * **Valuation Date**: 2026-11-09
 * **Portfolio XIRR**: **-4.15%** (Current Traded Positions Value: ₹511,280)
-* **Benchmark XIRR**: **7.24%** (Simulated Benchmark Value: ₹668,925)
+* **Benchmark XIRR**: **7.22%** (Simulated Benchmark Value: ₹668,543)
 * *Benchmark: Nifty 50 (^NSEI; Nifty 50 TRI is not available on Yahoo Finance)*
 
 #### Holding-Level XIRR (From Trade Cash Flows)
