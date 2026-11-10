@@ -3,46 +3,46 @@
 ### Portfolio Performance vs Benchmark
 
 * **First Recorded Trade**: 2021-04-16
-* **Valuation Date**: 2026-11-09
-* **Portfolio XIRR**: **-4.15%** (Current Traded Positions Value: ₹511,280)
-* **Benchmark XIRR**: **7.22%** (Simulated Benchmark Value: ₹668,543)
+* **Valuation Date**: 2026-11-10
+* **Portfolio XIRR**: **-4.14%** (Current Traded Positions Value: ₹511,336)
+* **Benchmark XIRR**: **7.23%** (Simulated Benchmark Value: ₹668,925)
 * *Benchmark: Nifty 50 (^NSEI; Nifty 50 TRI is not available on Yahoo Finance)*
 
 #### Holding-Level XIRR (From Trade Cash Flows)
 
 | Symbol     |   Held Qty |   Traded Qty | Current Value   | XIRR    | History              |
 |:-----------|-----------:|-------------:|:----------------|:--------|:---------------------|
-| IDECEL     |       1500 |         1500 | ₹19,005         | 36.10%  | Full                 |
-| FEDBAN     |         48 |           48 | ₹16,517         | 31.37%  | Full                 |
-| NIPNIT     |         76 |           76 | ₹2,737          | 29.28%  | Full                 |
-| GAIL       |         61 |           61 | ₹11,468         | 18.44%  | Full                 |
-| KOTAKBKETF |         30 |           30 | ₹1,860          | 17.37%  | Full                 |
-| GUJPPL     |         20 |           20 | ₹3,412          | 17.21%  | Full                 |
-| SEQSCI     |         10 |           10 | ₹2,375          | 16.10%  | Full                 |
-| ENGIND     |         21 |           21 | ₹4,866          | 15.85%  | Full                 |
-| BHAELE     |         80 |           48 | ₹18,938         | 14.16%  | Partial (48/80 sh)   |
-| NHPC       |         55 |           55 | ₹4,421          | 11.83%  | Full                 |
-| ICINIF     |         86 |           86 | ₹24,305         | 11.10%  | Full                 |
-| DRREDD     |          6 |            6 | ₹8,310          | 9.79%   | Full                 |
-| TATPOW     |          8 |            8 | ₹2,880          | 8.81%   | Full                 |
+| IDECEL     |       1500 |         1500 | ₹19,005         | 36.03%  | Full                 |
+| FEDBAN     |         48 |           48 | ₹16,517         | 31.34%  | Full                 |
+| NIPNIT     |         76 |           76 | ₹2,737          | 29.06%  | Full                 |
+| GAIL       |         61 |           61 | ₹11,468         | 18.39%  | Full                 |
+| GUJPPL     |         20 |           20 | ₹3,412          | 17.20%  | Full                 |
+| KOTAKBKETF |         30 |           30 | ₹1,860          | 17.17%  | Full                 |
+| SEQSCI     |         10 |           10 | ₹2,375          | 16.09%  | Full                 |
+| ENGIND     |         21 |           21 | ₹4,866          | 15.83%  | Full                 |
+| BHAELE     |         80 |           48 | ₹18,938         | 14.15%  | Partial (48/80 sh)   |
+| NHPC       |         55 |           55 | ₹4,421          | 11.82%  | Full                 |
+| ICINIF     |         86 |           86 | ₹24,361         | 11.66%  | Full                 |
+| DRREDD     |          6 |            6 | ₹8,310          | 9.78%   | Full                 |
+| TATPOW     |          8 |            8 | ₹2,880          | 8.80%   | Full                 |
 | TATGLO     |         30 |           30 | ₹32,517         | 6.51%   | Full                 |
-| NTPC       |         12 |           12 | ₹3,945          | 6.31%   | Full                 |
-| HINPET     |         14 |           14 | ₹5,400          | 2.48%   | Full                 |
-| JSWENE     |         54 |           54 | ₹28,250         | 1.31%   | Full                 |
+| NTPC       |         12 |           12 | ₹3,945          | 6.30%   | Full                 |
+| HINPET     |         14 |           14 | ₹5,400          | 2.47%   | Full                 |
+| JSWENE     |         54 |           54 | ₹28,250         | 1.30%   | Full                 |
 | PETLNG     |         14 |           14 | ₹4,486          | 1.29%   | Full                 |
 | HDF250     |         24 |           24 | ₹4,240          | 0.88%   | Full                 |
-| ONGC       |         39 |           39 | ₹9,106          | -2.92%  | Full                 |
-| MIR150     |        194 |          194 | ₹4,433          | -3.89%  | Full                 |
+| ONGC       |         39 |           39 | ₹9,106          | -2.91%  | Full                 |
+| MIR150     |        194 |          194 | ₹4,433          | -3.86%  | Full                 |
 | ASHLEY     |        106 |           53 | ₹9,268          | -3.95%  | Partial (53/106 sh)  |
-| RELIND     |         76 |           74 | ₹98,006         | -7.49%  | Partial (74/76 sh)   |
-| GUJGA      |          7 |            7 | ₹2,808          | -7.67%  | Full                 |
-| HDFBAN     |        130 |           75 | ₹59,861         | -11.10% | Partial (75/130 sh)  |
-| SJVLIM     |         67 |           67 | ₹3,867          | -13.03% | Full                 |
-| JIOFIN     |         53 |           28 | ₹6,440          | -15.69% | Partial (28/53 sh)   |
-| WIPRO      |        220 |          170 | ₹33,830         | -17.19% | Partial (170/220 sh) |
-| ICIGOL     |        250 |          250 | ₹30,295         | -17.62% | Full                 |
-| ICIPSE     |        193 |          193 | ₹35,477         | -36.32% | Full                 |
-| LIC        |         80 |           45 | ₹17,955         | -52.48% | Partial (45/80 sh)   |
+| RELIND     |         76 |           74 | ₹98,006         | -7.48%  | Partial (74/76 sh)   |
+| GUJGA      |          7 |            7 | ₹2,808          | -7.66%  | Full                 |
+| HDFBAN     |        130 |           75 | ₹59,861         | -11.09% | Partial (75/130 sh)  |
+| SJVLIM     |         67 |           67 | ₹3,867          | -13.02% | Full                 |
+| JIOFIN     |         53 |           28 | ₹6,440          | -15.68% | Partial (28/53 sh)   |
+| WIPRO      |        220 |          170 | ₹33,830         | -17.16% | Partial (170/220 sh) |
+| ICIGOL     |        250 |          250 | ₹30,295         | -17.56% | Full                 |
+| ICIPSE     |        193 |          193 | ₹35,477         | -36.20% | Full                 |
+| LIC        |         80 |           45 | ₹17,955         | -52.39% | Partial (45/80 sh)   |
 
 #### Trade History Coverage Gaps
 
@@ -69,7 +69,7 @@
 | BHAELE     | Defense              | 4.8%     | +149.98%       | ₹330.97         | SELL        | Exit all 80 sh (~₹31,564)        | Trend exit: month-end close ₹369.90 < 10-month average ₹410.09. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
 | ICIGOL     | Commodities          | 4.6%     | -12.66%        | N/A             | SELL        | Exit all 250 sh (~₹30,295)       | Thesis invalidated: Price ₹121.18 <= invalidation price ₹131.80.                                                                                                                                                                                               | INVALIDATED     |            2 |
 | JSWENE     | Power                | 4.3%     | +2.84%         | N/A             | SELL        | Exit all 54 sh (~₹28,250)        | Trend exit: month-end close ₹500.35 < 10-month average ₹521.99. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            3 |
-| ICINIF     | Broad Market         | 3.7%     | +4.26%         | N/A             | HOLD        | Hold                             | Consolidation hold: Price ₹282.62 moving sideways between 50 DMA (₹263.09) and 200 DMA (₹270.52); conviction (4/5) thesis INTACT above invalidation (₹238.55).                                                                                                 | INTACT          |            4 |
+| ICINIF     | Broad Market         | 3.7%     | +4.50%         | N/A             | HOLD        | Hold                             | Consolidation hold: Price ₹283.27 moving sideways between 50 DMA (₹263.28) and 200 DMA (₹270.51); conviction (4/5) thesis INTACT above invalidation (₹238.55).                                                                                                 | INTACT          |            4 |
 | LGELEC     | Consumer Electronics | 3.5%     | +57.35%        | ₹1285.20        | ACCUMULATE  | ACCUMULATE (next monthly review) | Accumulation channel intact; scheduled for next monthly review.                                                                                                                                                                                                | INTACT          |            4 |
 | IDECEL     | Telecom              | 2.9%     | +71.45%        | ₹11.05          | SELL        | Exit all 1500 sh (~₹19,005)      | Trend exit: month-end close ₹11.83 < 10-month average ₹12.11. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                      | INTACT          |            2 |
 | ASHLEY     | Auto                 | 2.8%     | +76.66%        | ₹148.26         | SELL        | Exit all 106 sh (~₹18,535)       | Trend exit: month-end close ₹144.82 < 10-month average ₹166.32. Sell and hold cash; re-entry is signalled when a month-end close is back above the average.                                                                                                    | INTACT          |            4 |
@@ -142,7 +142,7 @@ Combined direct stock holdings plus indirect exposure via Nifty 50 (`ICINIF`) an
 | BHAELE   | 4.8%            | 4.78%              | Direct only                              |
 | ICIGOL   | 4.6%            | 4.59%              | Direct only                              |
 | JSWENE   | 4.3%            | 4.28%              | Direct only                              |
-| ICINIF   | 3.7%            | 3.68%              | Direct only                              |
+| ICINIF   | 3.7%            | 3.69%              | Direct only                              |
 | LGELEC   | 3.5%            | 3.53%              | Direct only                              |
 | IDECEL   | 2.9%            | 2.88%              | Direct only                              |
 | ASHLEY   | 2.8%            | 2.81%              | Direct only                              |
@@ -160,7 +160,7 @@ Combined direct stock holdings plus indirect exposure via Nifty 50 (`ICINIF`) an
 
 | Symbol   | Category         | Weight   | Value   |   Conviction |
 |:---------|:-----------------|:---------|:--------|-------------:|
-| ICINIF   | Index ETF (Core) | 3.7%     | ₹24,305 |            4 |
+| ICINIF   | Index ETF (Core) | 3.7%     | ₹24,361 |            4 |
 | MIR150   | Index ETF (Core) | 0.7%     | ₹4,433  |            4 |
 | HDF250   | Index ETF (Core) | 0.6%     | ₹4,240  |            4 |
 
@@ -253,7 +253,7 @@ See `reports/thesis_proposals.md` for proposed invalidation floor increases on m
 | Section 112A LTCG Exemption Remaining | ₹125,000.00 | 0.0%            | Limit: ₹125,000 per financial year   |
 | Total Unrealised LTCG (> 365 days)    | ₹48,658.04  | 12.5%           | Open long-term profit inventory      |
 | ⚡ Eligible Tax-Free LTCG to Harvest   | ₹48,658.04  | 0.0% (Zero Tax) | Can be booked tax-free before FY end |
-| Total Unrealised STCG (≤ 365 days)    | ₹4,619.09   | 20.0%           | Short-term unrealised gains          |
+| Total Unrealised STCG (≤ 365 days)    | ₹4,674.99   | 20.0%           | Short-term unrealised gains          |
 
 #### Loss-Harvest Candidates (Offset Value)
 
